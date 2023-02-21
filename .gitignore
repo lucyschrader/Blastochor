@@ -1,0 +1,15 @@
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Working files
+/_*
+
+# Input and output files
+input_files/
+output_files/

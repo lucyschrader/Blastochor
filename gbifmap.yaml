@@ -1,0 +1,63 @@
+---
+- core:
+  label: core
+  primary_endpoint: object
+  explode: null
+  reduce: null
+  extend:
+    - 1:
+      type: harvest
+      endpoint: fieldcollection
+      path: evidenceFor.atEvent.id
+      for_label: event
+    - 2:
+      type: harvest
+      endpoint: taxon
+      path: identification.i.toTaxon.id
+      for_label: taxon
+    - 3:
+      type: lookup
+      endpoint: agent
+      path: evidenceFor.atEvent.recordedBy.i.id
+      for_label: null
+    - 4:
+      type: lookup
+      endpoint: agent
+      path: identification.i.identifiedBy.id
+      for_label: null
+  fields:
+    - occurrenceID:
+      - literal:
+        - pid
+    - type:
+      - collate_list:
+        - None
+        - additionalType
+        - 0
+    - recordedByID:
+      - collate_list:
+        - evidenceFor.atEvent.recordedBy.i.id
+      - for_each:
+        - prev
+        - lookup:
+          - agent
+          - prev
+        - conditional:
+          - prev
+          - related.contentUrl
+          - related.title=ORCHID
+      - concatenate:
+        - prev
+
+- event:
+  label: event
+  primary_endpoint: fieldcollection
+  explode: false
+  reduce: false
+  fields:
+    - occurrenceID:
+      - points_to:
+        - core
+        - pid
+
+---

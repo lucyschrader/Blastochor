@@ -1,0 +1,39 @@
+---
+# Blastochor config
+# Set data harvest parameters. See README.md for default values.
+
+# Setup
+api_key_env: TE-PAPA-KEY
+mapping_file:
+corefile: Core
+input_dir: input_files
+output_dir: output_files
+use_skiplist: False
+skipfile:
+
+# Run
+mode: search
+quiet: False
+base_url: https://data.tepapa.govt.nz/collection/
+endpoint: object
+
+# List mode settings
+list:
+- source:
+
+# Search mode settings
+api:
+- max_records: -1
+- size: 100
+
+search:
+- query: *
+- sort_field: 
+  sort_value:
+
+filter:
+- collection: 
+- allows_download: None
+- min_image_size: 0
+- keyword_fields:
+- keyword_values:
