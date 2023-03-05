@@ -4,7 +4,11 @@
   primary_endpoint: object
   explode: null
   reduce: null
-  extend: null
+  extend:
+    - 1:
+      endpoint: agent
+      path: production.i.contributor.id
+      for_label: null
   fields: 
     - irn:
       - literal:
@@ -19,9 +23,8 @@
       - collate_list:
         - hasRepresentation.i.id
     - rights_title:
-      - collate_list:
-        - hasRepresentation.i.rights.rights_title
-        - 0
+      - literal:
+        - hasRepresentation.i.rights.title
     - description:
       - literal:
         - description
@@ -29,17 +32,17 @@
       - clean_html:
         - description
     - creator:
-      - collate_list:
-        - production.i.contributor.title
-        - 0
+      - lookup:
+        - agent
+        - production.i.contributor.id
+      - literal:
+        - title
     - createdDate:
-      - collate_list:
+      - literal:
         - production.i.verbatimCreatedDate
-        - 0
     - createdPlace:
-      - collate_list:
-        production.i.spatial.title
-        - 0
+      - literal:
+        - production.i.spatial.title
     - specimenType:
       - literal:
         - specimenType
@@ -54,36 +57,25 @@
         - evidenceFor.atEvent.recordedBy.i.title
     - dateIdentified:
       - literal:
-        - collate_list:
-          - identification.i.verbatimDateIdentified
-          - 0
+        - identification.i.verbatimDateIdentified
     - identifiedBy:
-      - collate_list:
+      - literal:
         - identification.i.identifiedBy.title
-        - 0
     - qualifiedName:
-      - collate_list:
+      - literal:
         - identification.i.qualifiedName
-        - 0
     - scientificName:
-      - collate_list:
+      - literal:
         - identification.i.toTaxon.scientificName
-        - 0
     - family:
-      - collate_list:
+      - literal:
         - identification.i.toTaxon.family
-        - 0
     - vernacularName:
-      - collate_list:
-        - identification.i.toTaxon.vernacularName
-        - 0
-      - collate_list:
-        - prev.i.title
-        - 0
+      - literal:
+        - identification.i.toTaxon.vernacularName.i.title
     - typeStatus:
-      - collate_list:
+      - literal:
         - identification.i.typeStatus
-        - 0
     - creditLine:
       - literal:
         - creditLine
@@ -97,4 +89,3 @@
     - coUrlText:
       - hardcoded:
         - Te Papa Collections Online
----

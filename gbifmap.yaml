@@ -6,22 +6,18 @@
   reduce: null
   extend:
     - 1:
-      type: harvest
       endpoint: fieldcollection
       path: evidenceFor.atEvent.id
       for_label: event
     - 2:
-      type: harvest
       endpoint: taxon
       path: identification.i.toTaxon.id
       for_label: taxon
     - 3:
-      type: lookup
       endpoint: agent
       path: evidenceFor.atEvent.recordedBy.i.id
       for_label: null
     - 4:
-      type: lookup
       endpoint: agent
       path: identification.i.identifiedBy.id
       for_label: null
@@ -30,10 +26,61 @@
       - literal:
         - pid
     - type:
-      - collate_list:
-        - None
+      - literal:
         - additionalType
         - 0
+    - created:
+      - literal:
+        - _meta.created
+    - language:
+      - hardcoded:
+        - en
+    - license:
+      - hardcoded:
+        - Creative Commons Attribution 4.0 International license (CC BY 4.0)
+    - rightsHolder:
+      - hardcoded:
+        - Museum of New Zealand Te Papa Tongarewa
+    - accessRights:
+      - hardcoded:
+        - /!URL TO BE CREATED/!
+    - bibliographicCitation:
+      - literal:
+        - captionFormatted
+    - references:
+      - format_string:
+        - https://collections.tepapa.govt.nz/object/{}
+        - id
+    - institutionID:
+      - hardcoded:
+        - http://grscicoll.org/institution/museum-new-zealand-te-papa-tongarewa
+    - collectionID:
+      - hardcoded:
+        - WELT
+    - datasetID:
+      - hardcoded:
+        - tepapa:collection/dataset/plants
+    - institutionCode:
+      - hardcoded:
+        - NMNZ
+    - collectionCode:
+      - hardcoded:
+        - Plants
+    - datasetName:
+      - hardcoded:
+        - Te Papa Plants collection specimens
+    - ownerInstitutionCode:
+      - hardcoded:
+        - NMNZ
+    - basisOfRecord:
+      - literal:
+        - basisOfRecord
+    - catalogNumber:
+      - literal:
+        - identifier
+    - recordedBy:
+      - collate_list:
+        - evidenceFor.atEvent.recordedBy.i.title
     - recordedByID:
       - collate_list:
         - evidenceFor.atEvent.recordedBy.i.id
@@ -43,21 +90,166 @@
           - agent
           - prev
         - conditional:
-          - prev
-          - related.contentUrl
-          - related.title=ORCHID
+          - related.i.contentUrl
+          - related.i.title=ORCHID
       - concatenate:
         - prev
+    - sex:
+      - literal:
+        - sex
+    - lifeStage:
+      - literal:
+        - lifeStage
+    - associatedMedia:
+      - collate_list:
+        - hasRepresentation.i.previewUrl
 
 - event:
   label: event
   primary_endpoint: fieldcollection
-  explode: false
-  reduce: false
+  explode: null
+  reduce: null
+  extend: null
   fields:
-    - occurrenceID:
-      - points_to:
-        - core
+    - eventID:
+      - literal:
         - pid
+    - fieldNumber:
+      - literal:
+        - fieldNumber
+    - eventDate:
+      - literal:
+        - eventDate
+    - verbatimEventDate:
+      - literal:
+        - verbatimEventDate
+    - habitat:
+      - literal:
+        - habitat
+    - samplingProtocol:
+      - literal:
+        - samplingProtocol
+    - fieldNotes:
+      - literal:
+        - fieldNotes
+    - continent:
+      - literal:
+        - atLocation.continent
+    - country:
+      - literal:
+        -atLocation.country
+    - countryCode:
+      - country_code:
+        - atLocation.country
+    - stateProvince:
+      - literal:
+        - atLocation.stateProvince
+    - locality:
+      - literal:
+        - atLocation.locality
+    - verbatimLocality:
+      - literal:
+        - atLocation.verbatimLocality
+    - verbatimElevation:
+      - literal:
+        - atLocation.verbatimElevation
+    - minimumElevationInMeters:
+      - literal:
+        - atLocation.minimumElevationInMeters
+    - maximumElevationInMeters:
+      - literal:
+        - atLocation.maximumElevationInMeters
+    - verbatimDepth:
+      - literal:
+        - atLocation.verbatimDepth
+    - minimumDepthInMeters:
+      - literal:
+        - atLocation.minimumDepthInMeters
+    - maximumDepthInMeters:
+      - literal:
+        - atLocation.maximumDepthInMeters
+    - minimumDistanceAboveSurfaceInMeters:
+      - literal:
+        - atLocation.minimumDistanceAboveSurfaceInMeters
+    - maximumDistanceAboveSurfaceInMeters:
+      - literal:
+        - atLocation.maximumDistanceAboveSurfaceInMeters
+    - decimalLatitude:
+      - collate_list:
+        - atLocation.mappingDetails.i.decimalLatitude
+    - decimalLongitude:
+      - collate_list:
+        - atLocation.mappingDetails.i.decimalLongitude
+    - geodeticDatum:
+      - collate_list:
+        - atLocation.mappingDetails.i.geodeticDatum
+    - georeferenceSources:
+      - literal:
+        - atLocation.georeferenceSources
 
----
+- identification:
+  label: identification
+  primary_endpoint: object
+  explode: null
+  reduce: identification
+  extend: null
+  fields:
+    - identificationID:
+      - format_string:
+        - tepapa:collection/identification/{}
+        - id
+        - explode_ordinal
+    - identificationQulifier:
+      - literal:
+        - qualifier
+    - typeStatus:
+      - format_string:
+        - /{} of {}
+        - typeStatus
+        - qualifiedName
+    - identifiedBy:
+      - literal:
+        - identifiedBy.title
+    - identifiedByID:
+      - lookup:
+        - agent
+        - identifiedBy.id
+      - conditional:
+        - prev
+        - related.contentUrl
+        - related.title=ORCID
+    - dateIdentified:
+      - literal:
+        - dateIdentified
+
+- taxon:
+  label: taxon
+  primary_endpoint: taxon
+  explode: null
+  reduce: null
+  extend: null
+  fields:
+    - taxonID:
+      - literal:
+        - pid
+    - scientificName:
+      - literal:
+        - scientificName
+    - taxonRank:
+      - literal:
+        - taxonRank
+    - higherClassification:
+      - literal:
+        - higherClassification
+    - kingdom:
+      - literal:
+        - kingdom
+    - genus:
+      - literal:
+        - genus
+    - vernacularName:
+      - collate_list:
+        - vernacularName.i.title
+    - nomenclaturalCode:
+      - literal:
+        - nomenclaturalCode

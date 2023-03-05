@@ -7,8 +7,11 @@ ENV/
 env.bak/
 venv.bak/
 
+# cache
+__pycache__/
+
 # Working files
-/_*
+/_work*
 
 # Input and output files
 input_files/

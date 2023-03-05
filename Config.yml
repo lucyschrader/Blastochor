@@ -4,36 +4,33 @@
 
 # Setup
 api_key_env: TE-PAPA-KEY
-mapping_file:
-corefile: Core
+mapping_file: null
+corefile: default
 input_dir: input_files
 output_dir: output_files
 use_skiplist: False
-skipfile:
+skipfile: null
+min_image_size: 0
 
 # Run
 mode: search
-quiet: False
-base_url: https://data.tepapa.govt.nz/collection/
+quiet: True
+base_url: https://data.tepapa.govt.nz/collection
 endpoint: object
 
 # List mode settings
-list:
-- source:
+list_source: null
 
 # Search mode settings
-api:
-- max_records: -1
-- size: 100
+max_records: 50
+size: 25
 
-search:
-- query: *
-- sort_field: 
-  sort_value:
+query: "*"
+sort_field: null
+sort_value: null
 
 filter:
-- collection: 
-- allows_download: None
-- min_image_size: 0
-- keyword_fields:
-- keyword_values:
+  collection: RareBooks
+  allows_download: null
+  keyword_fields: null
+  keyword_values: null
