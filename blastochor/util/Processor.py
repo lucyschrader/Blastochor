@@ -50,16 +50,6 @@ def clean_html(data, **kwargs):
     value = dirty_value
     return value
 
-def lookup_record(data, **kwargs):
-    # Find an IRN in the provided record and return the associated record
-    path = kwargs.get("path")
-    endpoint = kwargs.get("endpoint")
-    ordinal = kwargs.get("ordinal")
-
-    irn = literal(data, path=path, ordinal=ordinal)
-
-    return records.find_record(endpoint=endpoint, irn=irn)
-
 def collate_list(data, path):
     # Look through each child path of a list and collate all values of child fields with the same name
     # Currently only works for one level of list
@@ -134,6 +124,19 @@ def literal(data, **kwargs):
     path = handle_iterator_in_path(path=kwargs.get("path"), ordinal=kwargs.get("ordinal"))
     value = step_to_field(data=data, path=path)
     return value
+
+def lookup_record(data, **kwargs):
+    # Find an IRN in the provided record and return the associated record
+    path = kwargs.get("path")
+    endpoint = kwargs.get("endpoint")
+    ordinal = kwargs.get("ordinal")
+
+    irn = literal(data, path=path, ordinal=ordinal)
+
+    if irn:
+        return records.find_record(endpoint=endpoint, irn=irn)
+    
+    return None
 
 def measurement_conversion(data, params):
     pass
@@ -275,7 +278,9 @@ class FieldProcessor():
                 except:
                     ordinal = None
 
-                return lookup_record(data, endpoint=endpoint, path=path, ordinal=ordinal).data
+                record = lookup_record(data, endpoint=endpoint, path=path, ordinal=ordinal)
+                if record:
+                    return record.data
 
             case "measurement_conversion":
                 return measurement_conversion(data, params)

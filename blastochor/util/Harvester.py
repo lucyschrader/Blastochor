@@ -98,23 +98,25 @@ class Harvester():
         trigger_path = trigger.harvest_path.split(".")
         if "i" in trigger_path:
             extension_irns = processor.collate_list(record.data, path=trigger_path)
-            extension_irns = [i for i in extension_irns if i is not None]
-            for irn in extension_irns:
-                if records.find_record(endpoint=trigger.harvest_endpoint, irn=irn) == None:
-                    if not config.get("quiet"):
-                        self.print("Reharvest triggered...")
+            if extension_irns:
+                extension_irns = [i for i in extension_irns if i is not None]
+                for irn in extension_irns:
+                    if records.find_record(endpoint=trigger.harvest_endpoint, irn=irn) == None:
+                        if not config.get("quiet"):
+                            self.print("Reharvest triggered...")
 
-                    extension_record = self.create_single_record(endpoint=trigger.harvest_endpoint, irn=irn, label=trigger.label)
-                    if trigger.label:
-                        extension_record.relate_record(label=trigger.label, related_record_pid=record.pid)
+                        extension_record = self.create_single_record(endpoint=trigger.harvest_endpoint, irn=irn, label=trigger.label)
+                        if trigger.label:
+                            extension_record.relate_record(label=trigger.label, related_record_pid=record.pid)
         else:
             extension_irn = processor.literal(self.data, path=trigger_path)
-            if records.find_record(endpoint=trigger.harvest_endpoint, irn=extension_irn) == None:
-                if not config.get("quiet"):
-                    self.print("Reharvest triggered...")
-                        
-                extension_record = self.create_single_record(endpoint=trigger.harvest_endpoint, irn=extension_irn, label=trigger.label)
-                if trigger.label:
-                    extension_record.relate_record(label=trigger.label, related_record_pid=record.pid)
+            if extension_irn:
+                if records.find_record(endpoint=trigger.harvest_endpoint, irn=extension_irn) == None:
+                    if not config.get("quiet"):
+                        self.print("Reharvest triggered...")
+                            
+                    extension_record = self.create_single_record(endpoint=trigger.harvest_endpoint, irn=extension_irn, label=trigger.label)
+                    if trigger.label:
+                        extension_record.relate_record(label=trigger.label, related_record_pid=record.pid)
 
 harvester = Harvester()
