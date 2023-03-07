@@ -66,7 +66,7 @@ class CoApi():
 
 class Scroll():
 	# TODO: Make all this work
-	def __init__(self, query=None, fields=None, sort=None, filters=None, headers=None, duration=2):
+	def __init__(self, query=None, fields=None, sort=None, filters=None, headers=None, duration=1):
 		self.scroll_post_url = None
 		self.scroll_get_url = None
 

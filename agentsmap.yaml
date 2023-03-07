@@ -59,4 +59,10 @@
         - pid
     - related_objects:
       - related:
-        - title
+        - 50
+        - Object,Specimen
+      - for_each:
+        - literal:
+          - title
+      - concatenate:
+        - null

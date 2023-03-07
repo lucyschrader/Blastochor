@@ -56,7 +56,8 @@ class Harvester():
                     records.append(new_record)
                     self.check_for_triggers(new_record)
                 else:
-                    print("Duplicate record: {}".format(record.get("pid")))
+                    if not config.get("quiet"):
+                        print("Duplicate record: {}".format(record.get("pid")))
 
             start += size
             time.sleep(self.sleep)

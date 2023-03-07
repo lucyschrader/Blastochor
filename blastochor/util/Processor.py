@@ -2,6 +2,7 @@
 
 import requests
 import time
+import json
 
 from blastochor.settings.Settings import config
 from blastochor.util.Records import records
@@ -65,7 +66,14 @@ def collate_list(data, path):
     if not parent_data:
         return None
 
-    for i in range(0, len(parent_data)):
+    # Put a limit on the number of list items returned
+    # Long lists (eg people referenced by a lot of narratives) can break the CSV cell limit
+    iterator_limit = len(parent_data)
+    app_limit = config.get("max_list_size")
+    if app_limit > 0 and app_limit < iterator_limit:
+        iterator_limit = app_limit
+
+    for i in range(0, iterator_limit):
         value = literal(data, path=path, ordinal=i)
         values.append(value)
 
@@ -73,7 +81,13 @@ def collate_list(data, path):
 
 def concatenate_list(data):
     # Join a list using "|" as specified in Darwin Core
-    value = data.join(" | ")
+    data = [i for i in data if i is not None]
+    if len(data) == 1:
+        value = data[0]
+    elif len(data) > 1:
+        value = " | ".join(data)
+    else:
+        value = None
     return value
 
 def conditional_inclusion(data, value_path, check_path, check_value):
@@ -162,7 +176,7 @@ def prioritised_inclusion(data, params):
 def process_quality_score():
     pass
 
-def related(data, path):
+def related(data, size, types):
     # Make a fresh query to the special /related endpoint for the current record
     # Collate values from the path specified
     values = []
@@ -171,20 +185,24 @@ def related(data, path):
     auth_value = config.get("api_key")
     headers = {auth_key: auth_value, "Content-Type": "application/json", "Accept": "application/json;profiles=tepapa.collections.api.v1"}
     related_url = "{}/related".format(data.get("href"))
-    response = json.loads(requests.get(related_url, headers=headers).text)
 
-    for record in response:
-        if "i" in path:
-            record_values = collate_list(data=record, path=path)
-            for value in record_values:
-                values.append(value)
-        else:
-            record_value = literal(data=record, path=path)
-            values.append(record_value)
+    if size or types:
+        related_url += "?"
+    if size:
+        related_url += "size={}".format(size)
+    if size and types:
+        related_url += "&"
+    if types:
+        related_url += "types={}".format(types)
+
+    if not config.get("quiet"):
+        print("Requesting {}".format(related_url))
+
+    results = json.loads(requests.get(related_url, headers=headers).text).get("results")
     
     time.sleep(0.1)
 
-    return values
+    return results
 
 def value_extend(data, params):
     # Extend a value to a specified length using a provided string
@@ -204,6 +222,7 @@ class FieldProcessor():
         self.reprocess_value = False
 
         self.value = None
+        self.holding_value = []
 
         self.run_processing()
 
@@ -214,7 +233,19 @@ class FieldProcessor():
             params = f.get(function)
 
             if reprocess_value == True:
-                self.value = self.select_function(function, self.value, params)
+                if function == "for_each":
+                    if isinstance(self.value, list):
+                        for subfunction in params:
+                            subfunction_name = list(subfunction.keys())[0]
+                            subfunction_params = subfunction.get(subfunction_name)
+                            for value in self.value:
+                                self.holding_value.append(self.select_function(subfunction_name, value, subfunction_params))
+                    else:
+                        # TODO: raise an error and fall back in some handy way
+                        pass
+                    self.value = self.holding_value
+                else:
+                    self.value = self.select_function(function, self.value, params)
             else:
                 self.value = self.select_function(function, self.data, params)
 
@@ -289,5 +320,6 @@ class FieldProcessor():
                 return points_to(data, params)
 
             case "related":
-                path = params[0].split(".")
-                return get_related(data, path)
+                size = params[0]
+                types = params[1]
+                return related(data, size=size, types=types)

@@ -4,33 +4,34 @@
 
 # Setup
 api_key_env: TE-PAPA-KEY
-mapping_file: null
-corefile: default
+mapping_file: agentsmap.yaml
+corefile: agents
 input_dir: input_files
 output_dir: output_files
 use_skiplist: False
 skipfile: null
 min_image_size: 0
+max_list_size: 100
 
 # Run
 mode: search
 quiet: True
 base_url: https://data.tepapa.govt.nz/collection
-endpoint: object
+endpoint: agent
 
 # List mode settings
 list_source: null
 
 # Search mode settings
-max_records: 50
-size: 25
+max_records: -1
+size: 500
 
 query: "*"
 sort_field: null
 sort_value: null
 
 filter:
-  collection: RareBooks
+  collection: null
   allows_download: null
-  keyword_fields: null
-  keyword_values: null
+  keyword_fields: type
+  keyword_values: Person

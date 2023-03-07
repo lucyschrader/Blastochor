@@ -28,10 +28,12 @@
     - type:
       - literal:
         - additionalType
-        - 0
     - created:
       - literal:
         - _meta.created
+    - modified:
+      - literal:
+        - _meta.modified
     - language:
       - hardcoded:
         - en
@@ -88,7 +90,6 @@
         - prev
         - lookup:
           - agent
-          - prev
         - conditional:
           - related.i.contentUrl
           - related.i.title=ORCHID

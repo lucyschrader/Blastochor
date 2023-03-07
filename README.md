@@ -2,9 +2,7 @@
 
 ["blastochory, where the stem of the plant crawls along the ground to deposit its seed far from the base of the plant"](https://en.wikipedia.org/wiki/Seed_dispersal#Autochory)
 
-Fun fact: this doesn't work yet, but check back later. :)
-
-This tool lets you Te Papa's collections API using some basic configuration options, transform the data based on a mapping file, and export the data as a single CSV or multiple CSVs that reference one another, such as can be combined in a Darwin Core Archive (DwC-A).
+This tool lets you access Te Papa's collections API using some basic configuration options, transform the data based on a mapping file, and export the data as a single CSV or multiple CSVs that reference one another, such as can be combined in a Darwin Core Archive (DwC-A).
 
 This repo includes a basic mapping file that will be used if another is not provided.
 
@@ -28,12 +26,14 @@ When your config and mapping are ready, run the app with `python Blastochor.py`.
 
 ### Setup
 `api_key_env`: Environment name for your unique API key. Default is TE-PAPA-KEY
-`mapping_file`: Filename for file containing data mapping rules. No default (handled within app)
-`corefile`: If exporting multiple files, set to the label of the primary file, eg "core". Default is blank
+`mapping_file`: Filename for file containing data mapping rules. Default is null (points to a default mapping inside the app)
+`corefile`: If exporting multiple files, set to the label of the primary file, eg "core". Default is null
 `input_dir`: Directory holding any source files, like a skiplist or list or IRNs. Default is input_files
 `output_dir`: Directory for exported CSVs. Default is output_files
 `use_skiplist`: Set to True if using a skiplist. Default is False
-`skipfile`: Filename for skiplist. Default is blank
+`skipfile`: Filename for skiplist. Default is null
+`min_image_size`: Only export object records that have images that are at least this many px on each side. Default is blank
+`max_list_size`: Only collate lists of values into a single value up to the specified size. Default is 100
 
 ### Run
 `mode`: Set to search or list. Default is search
@@ -42,21 +42,21 @@ When your config and mapping are ready, run the app with `python Blastochor.py`.
 `endpoint`: Used when querying individual records. Set to the primary endpoint you want data from. Default is object
 
 ### List mode settings
-`source`: Filename for list of IRNs to query
+`list_source`: Filename for list of IRNs to query
 
 ### Search mode settings
 `max-records`: Set a limit on the number of records you want to export. Default is -1 (no limit)
 `size`: Set a limit on the number of records returned in one page of results. Default is 100
 
 `query`: String to search for. Default is * (wildcard)
-`sort_field`: Fieldname to sort results by, such as id, \_meta.modified. Default is blank (sorts by id)
-`sort_value`: Direction of sort, asc or desc. Default is blank (sorts asc)
+`sort_field`: Fieldname to sort results by, such as id, \_meta.modified. Default is null (sorts by id)
+`sort_value`: Direction of sort, asc or desc. Default is null (sorts asc)
 
-`collection`: Set collection to constrain search. Uses the APIs collection labels (PacificCultures, not Pacific Cultures). Default is blank
-`allows_download`: Set to True to only return object records that include downloadable images, False to only return records that don't. Default is blank
-`min_image_size`: Only export object records that have images that are at least this many px on each side. Default is blank
-`keyword_fields`: Fieldnames for extra filters on your search. Separate with a comma and no space
-`keyword_values`: Values for extra filters. Ensure you have the same number of terms as `keyword_fields` and they're in the right order.
+Filters:
+`collection`: Set collection to constrain search. Uses the APIs collection labels (PacificCultures, not Pacific Cultures). Default is null
+`allows_download`: Set to True to only return object records that include downloadable images, False to only return records that don't. Default is null
+`keyword_fields`: Fieldnames for extra filters on your search. Separate with `, `
+`keyword_values`: Values for extra filters. Ensure you have the same number of terms as `keyword_fields` and they're in the right order. Separate with `, `
 
 ## Mapping
 Mapping files are YAML (.yaml) files that name the CSVs that should be created, triggers for harvesting additional records, and lines of rules with the export-side fields in each file. Each rule then includes the API source field used and the transformation rules applied.
@@ -71,6 +71,7 @@ Each output file is a list item containing a dictionary of options.
 
 `reduce` sets a part of a whole record, applying all the following rules just to that section. Use this if the file only needs part of a record to simplify the processing rules.
 
+### Extend
 `extend` contains a list of triggers, identifying certain fields that contain IRNs that should also be harvested. For example:
 endpoint: fieldcollection
 path: evidenceFor.atEvent.id
@@ -80,6 +81,7 @@ This checks harvested records for an IRN in the evidenceFor.atEvent.id field. If
 
 If `for_label` is `null`, the record will be saved but not written out anywhere - do this if you just need some of the record's data for another function.
 
+### Fields
 The `fields` section contains a list of data transformation rules, headed up with the output field names. These need to be in the order you want them to show in your CSV. The rules are applied to every record included in the file.
 
 Each field then contains a list of functions (just one or several), which contain the API fields, strings, integers, or other parameters they'll be working on.
@@ -89,7 +91,7 @@ For example:
   - literal:
     - pid
 
-This means the file will have a column called `OccurrenceID`, which take a straight copy of the contents of the record's `pid` field.
+This means the file will have a column called `occurrenceID`, which take a straight copy of the contents of the record's `pid` field.
 
 When using a field name as a parameter, you need to provide the full path (unless you've `reduced` the record - more below). If one of the fields in the path contains a list, include an `i` to show it needs to be iterated through. For example:
 `identification.i.identifiedBy.title`
@@ -99,19 +101,54 @@ Functions can be chained together by adding them as further list items.
 ### Available functions
 `literal`
 Copies the value at the given location
-- parameters: field path. If the path includes a list, add an integer to copy a specified list member. Use `collate_list` to copy all list members
+- parameters: path to field. If the path includes a list, add an integer to copy a specified list member - if no integer is provided for a list, it will just get the first (`0`) value.
 - example: `pid`
 - example: `additionalType, 0`
 - example: `production.i.creator.title, 1`
 
 `hardcoded`
-Sets the value to the string provided
+Sets the value to the string provided.
 - parameters: a string
 - example: "https://data.tepapa.govt.nz"
 
 `collate_list`
-Gets all values of a field within a list. Automatically concatenated with "|" before writing out.
-- parameters: field path
+Gets all values of a field within a list. Automatically concatenated with " | " before writing out. Maximum length of list is controlled in `Config.yml`.
+- parameters: path to field
 - example: `hasRepresentation.i.rights.title`
 
-More functions coming...
+`clean_html`
+Removes unwanted html markup from a value, such as a `description`.
+- parameters: path to field
+
+`concatenate`
+Joins values in a list using " | ", after removing None values. Use after calling another function that produces a list
+- parameters: null
+
+`conditional`
+Returns a value for a given field if another field matches a specified value, indicated using `=`. Both paths need to be in the same section of the record.
+- parameters: path to field and path to field to check, with the specified value
+- example: `related.i.contentUrl` and `related.i.title=ORCID`
+
+`country_code`
+Finds a country name in a record and looks up its ISO 2-character country code.
+- parameters: path to a field that contains a country name
+- example: `evidenceFor.atEvent.atLocation.country`
+
+`format_string`
+Finds a value and inserts it into a provided string at a specified place. Mark the location for the value using `{}`. Intend to update this function to allow multiple substitutions.
+- parameters: string, path to field
+- example: `https://collections.tepapa.govt.nz/object/{}` and `id`
+
+`lookup`
+Find an IRN in the record and return the associated record for the next function. Record needs to have been harvested either directly or using `extend` functionality.
+- parameters: endpoint and path to field for the record's IRN
+- example: `agent` and `production.i.contributor.id`
+
+`prioritise`
+Try multiple paths in order and return the value of the first available one. Useful when trying to return the most precise available location.
+- parameters: list of paths, separated by `, `
+
+`related`
+Make a fresh query to the special /related endpoint for the current record, returning records that are connected in some way. Can only be used on a complete record as it requires the `href` value. Set a size to limit the number of results (default is 100), and specify types of records to filter down.
+- parameters: size (int) and types (Capitalise, separate with `,`)
+- example: `50` and `Object,Specimen`

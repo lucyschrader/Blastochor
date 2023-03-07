@@ -37,7 +37,7 @@ class OutputCSV():
 					elif len(value) > 1:
 						value = " | ".join(value)
 					else:
-						value == None
+						value = None
 				if value == None:
 					value = ""
 				row.append(value)

@@ -2,7 +2,7 @@
 - default:
   label: default
   primary_endpoint: object
-  explode: null
+  explode: hasRepresentation
   reduce: null
   extend:
     - 1:
@@ -20,7 +20,7 @@
       - literal:
         - title
     - media_irns:
-      - collate_list:
+      - literal:
         - hasRepresentation.i.id
     - rights_title:
       - literal:
