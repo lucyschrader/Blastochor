@@ -1,6 +1,7 @@
 ---
 - core:
   label: core
+  reference_column: null
   primary_endpoint: object
   explode: null
   reduce: null
@@ -12,7 +13,7 @@
     - 2:
       endpoint: taxon
       path: identification.i.toTaxon.id
-      for_label: taxon
+      for_label: null
     - 3:
       endpoint: agent
       path: evidenceFor.atEvent.recordedBy.i.id
@@ -27,7 +28,7 @@
         - pid
     - type:
       - literal:
-        - additionalType
+        - additionalType.i
     - created:
       - literal:
         - _meta.created
@@ -87,14 +88,13 @@
       - collate_list:
         - evidenceFor.atEvent.recordedBy.i.id
       - for_each:
-        - prev
         - lookup:
           - agent
         - conditional:
           - related.i.contentUrl
           - related.i.title=ORCHID
       - concatenate:
-        - prev
+        - null
     - sex:
       - literal:
         - sex
@@ -107,6 +107,7 @@
 
 - event:
   label: event
+  reference_column: OccurrenceID
   primary_endpoint: fieldcollection
   explode: null
   reduce: null
@@ -138,7 +139,7 @@
         - atLocation.continent
     - country:
       - literal:
-        -atLocation.country
+        - atLocation.country
     - countryCode:
       - country_code:
         - atLocation.country
@@ -190,67 +191,77 @@
 
 - identification:
   label: identification
+  reference_column: OccurrenceID
   primary_endpoint: object
-  explode: null
+  explode: identification
   reduce: identification
   extend: null
   fields:
     - identificationID:
       - format_string:
-        - tepapa:collection/identification/{}
-        - id
-        - explode_ordinal
-    - identificationQulifier:
+        - tepapa:collection/identification/{}/{}
+        - id, explode_ordinal
+    - identificationQualifier:
       - literal:
         - qualifier
+    - verbatimIdentification:
+      - literal:
+        - qualifiedName
     - typeStatus:
       - format_string:
         - /{} of {}
-        - typeStatus
-        - qualifiedName
+        - typeStatus, qualifiedName
     - identifiedBy:
       - literal:
         - identifiedBy.title
     - identifiedByID:
+      - literal:
+        - identifiedBy.id
       - lookup:
         - agent
-        - identifiedBy.id
       - conditional:
-        - prev
         - related.contentUrl
         - related.title=ORCID
     - dateIdentified:
       - literal:
         - dateIdentified
-
-- taxon:
-  label: taxon
-  primary_endpoint: taxon
-  explode: null
-  reduce: null
-  extend: null
-  fields:
     - taxonID:
       - literal:
-        - pid
+        - toTaxon.pid
     - scientificName:
       - literal:
-        - scientificName
+        - toTaxon.scientificName
     - taxonRank:
       - literal:
-        - taxonRank
+        - toTaxon.rank
     - higherClassification:
       - literal:
-        - higherClassification
+        - toTaxon.higherClassification
     - kingdom:
       - literal:
-        - kingdom
+        - toTaxon.kingdom
+    - phylum:
+      - literal:
+        - toTaxon.phylum
+    - class:
+      - literal:
+        - toTaxon.class
+    - order:
+      - literal:
+        - toTaxon.order
+    - family:
+      - literal:
+        - toTaxon.family
     - genus:
       - literal:
-        - genus
+        - toTaxon.genus
     - vernacularName:
       - collate_list:
-        - vernacularName.i.title
+        - toTaxon.vernacularName.i.title
     - nomenclaturalCode:
+      - literal:
+        - toTaxon.id
+      - lookup:
+        - taxon
       - literal:
         - nomenclaturalCode

@@ -32,14 +32,18 @@
       - clean_html:
         - description
     - creator:
-      - lookup:
-        - agent
+      - collate_list:
         - production.i.contributor.id
-      - literal:
-        - title
+      - for_each:
+        - lookup:
+          - agent
+        - literal:
+          - title
+        - concatenate:
+          - null
     - createdDate:
       - literal:
-        - production.i.verbatimCreatedDate
+        - production.i.createdDate
     - createdPlace:
       - literal:
         - production.i.spatial.title
@@ -51,13 +55,19 @@
         - basisOfRecord
     - dateCollected:
       - literal:
-        - evidenceFor.atEvent.verbatimEventDate
+        - evidenceFor.atEvent.eventDate
     - collectedBy:
       - collate_list:
         - evidenceFor.atEvent.recordedBy.i.title
+    - country:
+      - literal:
+        - evidenceFor.atEvent.atLocation.country
+    - countryCode:
+      - country_code:
+        - evidenceFor.atEvent.atLocation.country
     - dateIdentified:
       - literal:
-        - identification.i.verbatimDateIdentified
+        - identification.i.dateIdentified
     - identifiedBy:
       - literal:
         - identification.i.identifiedBy.title

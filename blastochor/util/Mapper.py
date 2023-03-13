@@ -26,12 +26,13 @@ class Mapping():
 
         for output_map in map:
             label = output_map.get("label")
+            reference_column = output_map.get("reference_column")
             endpoint = output_map.get("primary_endpoint")
             explode_on = output_map.get("explode")
             reduce_on = output_map.get("reduce")
             output_rules = output_map.get("fields")
 
-            fieldnames = []
+            fieldnames = []            
             rules = []
 
             for rule in output_rules:
@@ -42,7 +43,7 @@ class Mapping():
                 fieldnames.append(output_fieldname)
                 rules.append(new_rule)
 
-            output = Output(label=label, explode_on=explode_on, reduce_on=reduce_on, fieldnames=fieldnames, rules=rules)
+            output = Output(label=label, endpoint=endpoint, reference_column=reference_column, explode_on=explode_on, reduce_on=reduce_on, fieldnames=fieldnames, rules=rules)
 
             self.outputs.append(output)
 

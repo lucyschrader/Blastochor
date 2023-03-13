@@ -4,8 +4,8 @@
 
 # Setup
 api_key_env: TE-PAPA-KEY
-mapping_file: agentsmap.yaml
-corefile: agents
+mapping_file: gbifmap.yaml
+corefile: core
 input_dir: input_files
 output_dir: output_files
 use_skiplist: False
@@ -15,23 +15,23 @@ max_list_size: 100
 
 # Run
 mode: search
-quiet: True
+quiet: False
 base_url: https://data.tepapa.govt.nz/collection
-endpoint: agent
+endpoint: object
 
 # List mode settings
 list_source: null
 
 # Search mode settings
-max_records: -1
-size: 500
+max_records: 50
+size: 50
 
 query: "*"
 sort_field: null
 sort_value: null
 
 filter:
-  collection: null
+  collection: Plants
   allows_download: null
-  keyword_fields: type
-  keyword_values: Person
+  keyword_fields: null
+  keyword_values: null

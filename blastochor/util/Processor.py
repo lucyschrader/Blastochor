@@ -7,42 +7,49 @@ import json
 from blastochor.settings.Settings import config
 from blastochor.util.Records import records
 
+with open("blastochor/resources/iso_countrycodes.json") as f:
+    countrycodes = json.load(f)
+
 def handle_iterator_in_path(path=None, ordinal=None):
     # Replace the list indicator 'i' in a path with a specified ordinal to create a navigable path
     # If no ordinal provided, defaults to first item in the list
     if not config.get("quiet"):
         print("Path: {}".format(path))
 
-    if "i" in path:
-        if not ordinal:
-            ordinal = 0
+    if isinstance(path, list):    
+        if "i" in path:
+            if not ordinal:
+                ordinal = 0
 
-        path = ["ord:{}".format(str(ordinal)) if item == "i" else item for item in path]
+            path = ["ord:{}".format(str(ordinal)) if item == "i" else item for item in path]
 
-        if not config.get("quiet"):
-            print("Revised path: {}".format(path))
+            if not config.get("quiet"):
+                print("Revised path: {}".format(path))
 
     return path
 
 def step_to_field(data=None, path=None):
     # Step through a record to provide a subsection or value
-    step = data
-    for field in path:
-        if field.startswith("ord:"):
-            ordinal = int(field.split(":")[1])
-            try:
-                step = step[ordinal]
-            except:
-                return None
-        else:
-            try:
-                step = step.get(field)
-            except:
-                return None
-    if step is not None:
-        return step
+    if isinstance(path, str):
+        return data.get(path)
     else:
-        return None
+        step = data
+        for field in path:
+            if field.startswith("ord:"):
+                ordinal = int(field.split(":")[1])
+                try:
+                    step = step[ordinal]
+                except:
+                    return None
+            else:
+                try:
+                    step = step.get(field)
+                except:
+                    return None
+        if step is not None:
+            return step
+        else:
+            return None
 
 def clean_html(data, **kwargs):
     # Remove unwanted html markup from a value
@@ -81,14 +88,17 @@ def collate_list(data, path):
 
 def concatenate_list(data):
     # Join a list using "|" as specified in Darwin Core
-    data = [i for i in data if i is not None]
-    if len(data) == 1:
-        value = data[0]
-    elif len(data) > 1:
-        value = " | ".join(data)
+    if isinstance(data, list):
+        data = [str(i) for i in data if i is not None]
+        if len(data) == 1:
+            value = data[0]
+        elif len(data) > 1:
+            value = " | ".join(data)
+        else:
+            value = None
+        return value
     else:
-        value = None
-    return value
+        return data
 
 def conditional_inclusion(data, value_path, check_path, check_value):
     # Return a value if another field matches a specified value
@@ -96,41 +106,58 @@ def conditional_inclusion(data, value_path, check_path, check_value):
     # For example, find related.i.contentUrl if related.i.title == "ORCID"
     if "i" in check_path:
         check_list = collate_list(data, path=check_path)
-        ordinal = check_list.index(check_value)
-        value = literal(data, path=value_path, ordinal=ordinal)
-        return value
+        if not check_list:
+            return None
+        else:
+            try:
+                ordinal = check_list.index(check_value)
+                return literal(data, path=value_path, ordinal=ordinal)
+            except:
+                return None
 
     else:
         check = literal(data, path=check_path)
-        if check == check_value:
-            value = literal(data, path=value_path)
-            return value
+        if not check:
+            return None
+        else:
+            if check == check_value:
+                return literal(data, path=value_path)
 
     return None
 
-def country_code(data, params):
-    # Find a country name in a record and return an ISO 2-character country code if match is found
-    pass
+def country_code(data, path):
+    country = literal(data, path=path)
+    if not country:
+        return None
+    else:
+        country_lookup = next(filter(lambda country_dict: country_dict.get("Name") == country, countrycodes), None)
+        if country_lookup:
+            return country_lookup.get("Code")
+        else:
+            return None
 
 def fixed_vocab(data, params):
     # Return a value if it matches a specified list
     pass
 
-def format_string(data, params):
+def format_string(data, string, inserts, explode_ordinal):
     # Find a value and incorporate it into a specified string
-    string = params[0]
-    path = params[1].split(".")
-    try:
-        ordinal == params[2]
-    except:
-        ordinal = None
-    path = handle_iterator_in_path(path=path, ordinal=ordinal)
-    value = step_to_field(data, path)
-    return string.format(value)
+    path_list = inserts.split(", ")
+    values = []
+    for path in path_list:
+        if path == "explode_ordinal":
+            values.append(explode_ordinal)
+        else:
+            path = path.split(".")
+            value = literal(data, path=path)
+            if not value:
+                value = ""
+            values.append(value)
 
-def hardcode_value(params):
+    return string.format(*values)
+
+def hardcode_value(value):
     # Return a specified string
-    value = params[0]
     return value
 
 def literal(data, **kwargs):
@@ -139,7 +166,7 @@ def literal(data, **kwargs):
     value = step_to_field(data=data, path=path)
     return value
 
-def lookup_record(data, **kwargs):
+def lookup_record(data, irn, endpoint):
     # Find an IRN in the provided record and return the associated record
     path = kwargs.get("path")
     endpoint = kwargs.get("endpoint")
@@ -214,15 +241,19 @@ def value_truncate(data, params):
     pass
 
 class FieldProcessor():
-    def __init__(self, data, rule, explode_ordinal):
+    def __init__(self, data, rule, explode_on, explode_ordinal):
         self.data = data
         self.functions = rule.mapping_functions
+        self.explode_on = explode_on
         self.explode_ordinal = explode_ordinal
 
         self.reprocess_value = False
 
         self.value = None
         self.holding_value = []
+
+        if not config.get("quiet"):
+            print("Processing column {}".format(rule.output_fieldname))
 
         self.run_processing()
 
@@ -236,14 +267,16 @@ class FieldProcessor():
                 if function == "for_each":
                     if isinstance(self.value, list):
                         for subfunction in params:
+                            print(self.value)
                             subfunction_name = list(subfunction.keys())[0]
                             subfunction_params = subfunction.get(subfunction_name)
+                            subfunction_index = 0
                             for value in self.value:
-                                self.holding_value.append(self.select_function(subfunction_name, value, subfunction_params))
+                                self.value[subfunction_index] = self.select_function(subfunction_name, value, subfunction_params)
+                                subfunction_index += 1
                     else:
                         # TODO: raise an error and fall back in some handy way
                         pass
-                    self.value = self.holding_value
                 else:
                     self.value = self.select_function(function, self.value, params)
             else:
@@ -277,41 +310,45 @@ class FieldProcessor():
             case "conditional":
                 value_path = params[0].split(".")
                 check_param = params[1].split("=")
-                check_path = check_param[0]
+                check_path = check_param[0].split(".")
                 check_value = check_param[1]
                 return conditional_inclusion(data, value_path=value_path, check_path=check_path, check_value=check_value)
 
             case "country_code":
-                return country_code(data, params)
+                path = params[0].split(".")
+                return country_code(data, path)
 
             case "fixed_vocab":
                 return fixed_vocab(data, params)
             
             case "format_string":
-                return format_string(data, params)
+                string = params[0]
+                inserts = params[1]
+                return format_string(data, string, inserts, self.explode_ordinal)
 
             case "hardcoded":
-                return hardcode_value(params)
+                value = params[0]
+                return hardcode_value(value)
 
             case "literal":
                 path = params[0].split(".")
-                try:
-                    ordinal = params[1]
-                except:
-                    ordinal = None
+                if self.explode_on in path:
+                    ordinal = self.explode_ordinal
+                else:
+                    try:
+                        ordinal = params[1]
+                    except:
+                        ordinal = None
                 return literal(data, path=path, ordinal=ordinal)
 
             case "lookup":
                 endpoint = params[0]
-                path = params[1].split(".")
-                try:
-                    ordinal = params[2]
-                except:
-                    ordinal = None
+                irn = data
 
-                record = lookup_record(data, endpoint=endpoint, path=path, ordinal=ordinal)
-                if record:
-                    return record.data
+                if not irn:
+                    return None
+                else:
+                    return records.find_record(endpoint=endpoint, irn=irn).data
 
             case "measurement_conversion":
                 return measurement_conversion(data, params)

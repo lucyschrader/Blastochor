@@ -49,10 +49,10 @@ class Harvester():
                 if response:
                     print("Search results page {i} received".format(i=i+1))
 
+            # TODO: Work out a fix for pagination/scrolling so I don't have to check for duplicates
             for record in response.records:
                 if records.find_record(endpoint=endpoint, irn=record.get("id")) == None:
                     new_record = ApiRecord(data=record, endpoint=endpoint)
-                    new_record.make_writable(label=config.get("corefile"), bool=True)
                     records.append(new_record)
                     self.check_for_triggers(new_record)
                 else:
@@ -69,16 +69,14 @@ class Harvester():
             endpoint = config.get("endpoint")
 
         for irn in irn_list:
-            self.create_single_record(self, endpoint=endpoint, irn=irn, label=config.get("corefile"))
+            self.create_single_record(self, endpoint=endpoint, irn=irn)
 
             time.sleep(self.sleep)
 
-    def create_single_record(self, endpoint, irn, label):
+    def create_single_record(self, endpoint, irn):
         response = self.API.view_resource(endpoint=endpoint, irn=irn)
         if response.errors == None:
             new_record = ApiRecord(data=response.data, endpoint=endpoint)
-            if label is not None:
-                new_record.make_writeable(label=label, bool=True)
             records.append(new_record)
             # TODO: run triggers in a batch after harvest
             self.check_for_triggers(new_record)
@@ -104,19 +102,19 @@ class Harvester():
                 for irn in extension_irns:
                     if records.find_record(endpoint=trigger.harvest_endpoint, irn=irn) == None:
                         if not config.get("quiet"):
-                            self.print("Reharvest triggered...")
+                            print("Reharvest triggered...")
 
-                        extension_record = self.create_single_record(endpoint=trigger.harvest_endpoint, irn=irn, label=trigger.label)
+                        extension_record = self.create_single_record(endpoint=trigger.harvest_endpoint, irn=irn)
                         if trigger.label:
                             extension_record.relate_record(label=trigger.label, related_record_pid=record.pid)
         else:
-            extension_irn = processor.literal(self.data, path=trigger_path)
+            extension_irn = processor.literal(record.data, path=trigger_path)
             if extension_irn:
                 if records.find_record(endpoint=trigger.harvest_endpoint, irn=extension_irn) == None:
                     if not config.get("quiet"):
-                        self.print("Reharvest triggered...")
+                        print("Reharvest triggered...")
                             
-                    extension_record = self.create_single_record(endpoint=trigger.harvest_endpoint, irn=extension_irn, label=trigger.label)
+                    extension_record = self.create_single_record(endpoint=trigger.harvest_endpoint, irn=extension_irn)
                     if trigger.label:
                         extension_record.relate_record(label=trigger.label, related_record_pid=record.pid)
 
