@@ -2,6 +2,7 @@
 
 import os
 import yaml
+from datetime import datetime
 
 collections = ["Archaeozoology", "Art", "Birds", "CollectedArchives", "Crustacea", "Fish", "FossilVertebrates", "Geology", "History", "Insects", "LandMammals", "MarineInvertebrates", "MarineMammals", "Molluscs", "MuseumArchives", "PacificCultures", "Philatelic", "Photography", "Plants", "RareBooks", "ReptilesAndAmphibians", "TaongaMāori"]
 sciences = ["Archaeozoology", "Birds", "Crustacea", "Fish", "FossilVertebrates", "Geology", "Insects", "LandMammals", "MarineInvertebrates", "MarineMammals", "Molluscs", "Plants", "ReptilesAndAmphibians"]
@@ -113,9 +114,43 @@ class InputList():
         
         return False
 
+class AppStats():
+    def __init__(self):
+        self.start_time = None
+        self.run_time = None
+        self.api_call_count = 0
+        self.search_result_count = 0
+        self.list_count = 0
+        self.extension_records_count = 0
+        self.file_write_counts = {}
+
+    def start(self):
+        self.start_time = datetime.now()
+
+    def end(self):
+        end_time = datetime.now()
+        delta = end_time - self.start_time
+        self.run_time = delta.total_seconds()
+
+    def print_stats(self):
+        print("Script ran in {} seconds".format(self.run_time))
+        print("Script made {} API calls".format(self.api_call_count))
+
+        if config.get("mode") == "search":
+            print("Script found {} search results".format(self.search_result_count))
+        elif config.get("mode") == "list":
+            print("Script queried {} records from source list".format(self.list_count))
+
+        print("Script queried {} extension records".format(self.extension_records_count))
+
+        for label in self.file_write_counts.keys():
+            print("Script wrote {n} records to the {l} file".format(n=self.file_write_counts.get(label), l=label))
+
 config = read_config()
 update_settings()
 set_filters()
 
 if config.get("quiet") == False:
     print("Settings updated...")
+
+stats = AppStats()

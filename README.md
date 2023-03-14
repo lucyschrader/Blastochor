@@ -65,11 +65,13 @@ Each output file is a list item containing a dictionary of options.
 
 `label` is what the app uses to generate output files and ensure they're applying the right rules to the right records.
 
+`reference_column` adds a column to the start of the CSV using the provided title, leaving a place for non-core files to reference the core file in each row.
+
 `primary_endpoint` is the endpoint (eg object, agent, taxon) this file will mainly use. Other endpoints can be specified in certain processing functions.
 
 `explode` sets a field with a list value where each child is written out separately, such as when you want a new row for every image attached to an object record.
 
-`reduce` sets a part of a whole record, applying all the following rules just to that section. Use this if the file only needs part of a record to simplify the processing rules.
+`reduce` cuts down the record's data to just the specified section, for example the list of images under `hasRepresentation`. This makes it easier to then navigate to subfields. The script expects the reduced data to be a list.
 
 ### Extend
 `extend` contains a list of triggers, identifying certain fields that contain IRNs that should also be harvested. For example:
@@ -78,6 +80,13 @@ path: evidenceFor.atEvent.id
 for_label: event
 
 This checks harvested records for an IRN in the evidenceFor.atEvent.id field. If found, it will send a separate query to the fieldcollection endpoint, storing the record for later use in the `event` file.
+
+If the record has already been harvested, the record object will just be updated with a flag that it needs to be included in that file.
+
+To output another CSV with the same endpoint as the core file, just point the extend rule back to the source. For example:
+endpoint: object
+path: id
+for_label: identification
 
 If `for_label` is `null`, the record will be saved but not written out anywhere - do this if you just need some of the record's data for another function.
 
@@ -93,7 +102,7 @@ For example:
 
 This means the file will have a column called `occurrenceID`, which take a straight copy of the contents of the record's `pid` field.
 
-When using a field name as a parameter, you need to provide the full path (unless you've `reduced` the record - more below). If one of the fields in the path contains a list, include an `i` to show it needs to be iterated through. For example:
+When using a field name as a parameter, you need to provide the full path (unless you've `reduced` the record - see above). If one of the fields in the path contains a list, include an `i` to show it needs to be iterated through. For example:
 `identification.i.identifiedBy.title`
 
 Functions can be chained together by adding them as further list items.
@@ -118,6 +127,7 @@ Gets all values of a field within a list. Automatically concatenated with " | " 
 
 `clean_html`
 Removes unwanted html markup from a value, such as a `description`.
+TODO: Actually do some cleaning here.
 - parameters: path to field
 
 `concatenate`
@@ -136,6 +146,7 @@ Finds a country name in a record and looks up its ISO 2-character country code.
 
 `format_string`
 Finds a value and inserts it into a provided string at a specified place. Mark the location for the value using `{}`. Intend to update this function to allow multiple substitutions.
+TODO: Option to return None if no value is found, instead of an unformatted string
 - parameters: string, path to field
 - example: `https://collections.tepapa.govt.nz/object/{}` and `id`
 
@@ -152,3 +163,5 @@ Try multiple paths in order and return the value of the first available one. Use
 Make a fresh query to the special /related endpoint for the current record, returning records that are connected in some way. Can only be used on a complete record as it requires the `href` value. Set a size to limit the number of results (default is 100), and specify types of records to filter down.
 - parameters: size (int) and types (Capitalise, separate with `,`)
 - example: `50` and `Object,Specimen`
+
+##

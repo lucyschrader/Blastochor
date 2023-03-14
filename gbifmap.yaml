@@ -11,14 +11,18 @@
       path: evidenceFor.atEvent.id
       for_label: event
     - 2:
+      endpoint: object
+      path: id
+      for_label: identification
+    - 3:
       endpoint: taxon
       path: identification.i.toTaxon.id
       for_label: null
-    - 3:
+    - 4:
       endpoint: agent
       path: evidenceFor.atEvent.recordedBy.i.id
       for_label: null
-    - 4:
+    - 5:
       endpoint: agent
       path: identification.i.identifiedBy.id
       for_label: null
@@ -200,7 +204,7 @@
     - identificationID:
       - format_string:
         - tepapa:collection/identification/{}/{}
-        - id, explode_ordinal
+        - parent_id, explode_ordinal
     - identificationQualifier:
       - literal:
         - qualifier
@@ -209,7 +213,7 @@
         - qualifiedName
     - typeStatus:
       - format_string:
-        - /{} of {}
+        - "{} of {}"
         - typeStatus, qualifiedName
     - identifiedBy:
       - literal:

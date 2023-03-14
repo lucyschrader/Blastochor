@@ -4,7 +4,7 @@ import requests
 import time
 import json
 
-from blastochor.settings.Settings import config
+from blastochor.settings.Settings import config, stats
 from blastochor.util.Records import records
 
 with open("blastochor/resources/iso_countrycodes.json") as f:
@@ -140,13 +140,27 @@ def fixed_vocab(data, params):
     # Return a value if it matches a specified list
     pass
 
-def format_string(data, string, inserts, explode_ordinal):
+def format_string(data, **kwargs):
     # Find a value and incorporate it into a specified string
-    path_list = inserts.split(", ")
+    data = kwargs.get("data")
+    string = kwargs.get("string")
+    inserts = kwargs.get("inserts")
+    explode_ordinal = str(kwargs.get("explode_ordinal"))
+    parent_pid = kwargs.get("parent_pid")
+
     values = []
-    for path in path_list:
+    for path in inserts:
         if path == "explode_ordinal":
-            values.append(explode_ordinal)
+            if explode_ordinal:
+                values.append(explode_ordinal)
+            else:
+                values.append("")
+        elif path == "parent_id":
+            if parent_pid:
+                parent_id = parent_pid.split("/")[-1]
+                values.append(parent_id)
+            else:
+                values.append("")
         else:
             path = path.split(".")
             value = literal(data, path=path)
@@ -226,6 +240,7 @@ def related(data, size, types):
         print("Requesting {}".format(related_url))
 
     results = json.loads(requests.get(related_url, headers=headers).text).get("results")
+    stats.api_call_count +=1
     
     time.sleep(0.1)
 
@@ -241,11 +256,12 @@ def value_truncate(data, params):
     pass
 
 class FieldProcessor():
-    def __init__(self, data, rule, explode_on, explode_ordinal):
+    def __init__(self, data, rule, explode_on, explode_ordinal, parent_pid):
         self.data = data
         self.functions = rule.mapping_functions
         self.explode_on = explode_on
         self.explode_ordinal = explode_ordinal
+        self.parent_pid = parent_pid
 
         self.reprocess_value = False
 
@@ -267,7 +283,6 @@ class FieldProcessor():
                 if function == "for_each":
                     if isinstance(self.value, list):
                         for subfunction in params:
-                            print(self.value)
                             subfunction_name = list(subfunction.keys())[0]
                             subfunction_params = subfunction.get(subfunction_name)
                             subfunction_index = 0
@@ -324,7 +339,8 @@ class FieldProcessor():
             case "format_string":
                 string = params[0]
                 inserts = params[1]
-                return format_string(data, string, inserts, self.explode_ordinal)
+                inserts = inserts.split(", ")
+                return format_string(data, string=string, inserts=inserts, explode_ordinal=self.explode_ordinal, parent_pid=self.parent_pid)
 
             case "hardcoded":
                 value = params[0]

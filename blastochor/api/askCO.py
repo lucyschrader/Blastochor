@@ -2,11 +2,12 @@ from requests import get, post, exceptions
 import json
 import os
 import time
-from blastochor.settings.Settings import config
+from blastochor.settings.Settings import config, stats
 
 class CoApi():
 
 	# Te Papa Collections Online API
+	# TODO: Better handling of response objects, particularly surfacing errors
 
 	def __init__(self):
 		# Create a new API object
@@ -29,8 +30,10 @@ class CoApi():
 
 		if request.method == "GET":
 			response = json.loads(get(request.url, headers=self.headers).text)
+			stats.api_call_count +=1
 		elif request.method == "POST":
 			response = json.loads(post(request.url, data=request.post_body, headers=self.headers).text)
+			stats.api_call_count +=1
 
 		if not config.get("quiet"):
 			print("Requesting: {}".format(request.url))
@@ -60,6 +63,7 @@ class CoApi():
 				except exceptions.ConnectionError:
 					print("Disconnected trying to get {}".format(resource_url))
 			else:
+				stats.api_call_count +=1
 				return Resource(response, resource_url)
 
 		return None

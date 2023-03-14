@@ -15,7 +15,7 @@ max_list_size: 100
 
 # Run
 mode: search
-quiet: False
+quiet: True
 base_url: https://data.tepapa.govt.nz/collection
 endpoint: object
 
@@ -23,8 +23,8 @@ endpoint: object
 list_source: null
 
 # Search mode settings
-max_records: 50
-size: 50
+max_records: 10
+size: 10
 
 query: "*"
 sort_field: null

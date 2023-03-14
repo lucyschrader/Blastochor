@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import yaml
-from blastochor.settings.Settings import config
+from blastochor.settings.Settings import config, stats
 from blastochor.util.Output import Output
 
 class Mapping():
@@ -46,6 +46,7 @@ class Mapping():
             output = Output(label=label, endpoint=endpoint, reference_column=reference_column, explode_on=explode_on, reduce_on=reduce_on, fieldnames=fieldnames, rules=rules)
 
             self.outputs.append(output)
+            stats.file_write_counts.update({label: 0})
 
             if output_map.get("extend"):
                 self.create_triggers(output_map, endpoint)

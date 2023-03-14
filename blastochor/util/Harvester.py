@@ -6,7 +6,7 @@ import math
 import time
 
 from blastochor.api import askCO
-from blastochor.settings.Settings import config
+from blastochor.settings.Settings import config, stats
 from blastochor.util.ApiRecord import ApiRecord
 from blastochor.util.Mapper import mapping
 import blastochor.util.Processor as processor
@@ -31,6 +31,7 @@ class Harvester():
         size = config.get("size")
 
         count_call = self.API.search(q=q, sort=sort, filters=filters, start=start, size=1)
+        stats.search_result_count = count_call.result_count
 
         if config.get("max_records") != -1:
             record_count = config.get("max_records")
@@ -65,6 +66,8 @@ class Harvester():
     def harvest_from_list(self, irn_list=None, endpoint=None):
         # Tell AskCO which records to query
         # Get records into Records object
+        stats.list_count = len(irn_list)
+
         if endpoint == None:
             endpoint = config.get("endpoint")
 
@@ -100,22 +103,33 @@ class Harvester():
             if extension_irns:
                 extension_irns = [i for i in extension_irns if i is not None]
                 for irn in extension_irns:
-                    if records.find_record(endpoint=trigger.harvest_endpoint, irn=irn) == None:
+                    this_record = records.find_record(endpoint=trigger.harvest_endpoint, irn=irn)
+                    if not this_record:
                         if not config.get("quiet"):
                             print("Reharvest triggered...")
 
                         extension_record = self.create_single_record(endpoint=trigger.harvest_endpoint, irn=irn)
+                        stats.extension_records_count += 1
+                        if trigger.label:
+                            extension_record.relate_record(label=trigger.label, related_record_pid=record.pid)
+                    else:
                         if trigger.label:
                             extension_record.relate_record(label=trigger.label, related_record_pid=record.pid)
         else:
             extension_irn = processor.literal(record.data, path=trigger_path)
             if extension_irn:
-                if records.find_record(endpoint=trigger.harvest_endpoint, irn=extension_irn) == None:
+                this_record = records.find_record(endpoint=trigger.harvest_endpoint, irn=extension_irn)
+                if not this_record:
                     if not config.get("quiet"):
                         print("Reharvest triggered...")
                             
                     extension_record = self.create_single_record(endpoint=trigger.harvest_endpoint, irn=extension_irn)
+                    stats.extension_records_count += 1
                     if trigger.label:
                         extension_record.relate_record(label=trigger.label, related_record_pid=record.pid)
+                else:
+                    if trigger.label:
+                        this_record.relate_record(label=trigger.label, related_record_pid=record.pid)
+
 
 harvester = Harvester()
