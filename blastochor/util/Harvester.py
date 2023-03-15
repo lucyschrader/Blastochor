@@ -63,6 +63,21 @@ class Harvester():
             start += size
             time.sleep(self.sleep)
 
+    def harvest_from_scroll(self):
+        endpoint = config.get("endpoint")
+        q = config.get("query")
+        sort = config.get("sort")
+        filters = config.get("filters")
+
+        max_records = config.get("max_records")
+
+        scroll = self.API.scroll(q=q, sort=sort, filters=filters)
+
+        for record in scroll.results:
+            new_record = ApiRecord(data=record, endpoint=endpoint)
+            records.append(new_record)
+            self.check_for_triggers(new_record)
+
     def harvest_from_list(self, irn_list=None, endpoint=None):
         # Tell AskCO which records to query
         # Get records into Records object

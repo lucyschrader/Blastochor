@@ -14,6 +14,8 @@ if __name__ == '__main__':
     harvester = Harvester.harvester
     if config.get("mode") == "search":
         harvester.harvest_from_search()
+    elif config.get("mode") == "scroll":
+        harvester.harvest_from_scroll()
     elif config.get("mode") == "list":
         input_list = Settings.InputList(settings.list.source)
         harvester.harvest_from_list(input_list.irn_list)

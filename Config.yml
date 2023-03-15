@@ -14,8 +14,8 @@ min_image_size: 0
 max_list_size: 100
 
 # Run
-mode: search
-quiet: True
+mode: scroll
+quiet: False
 base_url: https://data.tepapa.govt.nz/collection
 endpoint: object
 
@@ -23,10 +23,10 @@ endpoint: object
 list_source: null
 
 # Search mode settings
-max_records: 10
-size: 10
+max_records: 50
+size: 50
 
-query: "*"
+query: "Myosotis"
 sort_field: null
 sort_value: null
 

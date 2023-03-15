@@ -96,7 +96,7 @@
           - agent
         - conditional:
           - related.i.contentUrl
-          - related.i.title=ORCHID
+          - related.i.title=ORCID
       - concatenate:
         - null
     - sex:

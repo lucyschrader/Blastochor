@@ -163,5 +163,3 @@ Try multiple paths in order and return the value of the first available one. Use
 Make a fresh query to the special /related endpoint for the current record, returning records that are connected in some way. Can only be used on a complete record as it requires the `href` value. Set a size to limit the number of results (default is 100), and specify types of records to filter down.
 - parameters: size (int) and types (Capitalise, separate with `,`)
 - example: `50` and `Object,Specimen`
-
-##

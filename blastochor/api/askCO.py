@@ -40,6 +40,22 @@ class CoApi():
 			
 		return Results(response, request)
 
+	def scroll(self, q=None, **kwargs):
+		if not q and not kwargs:
+			raise ValueError("You must specify search criteria.")
+		if q:
+			kwargs["query"] = q
+
+		if not config.get("endpoint"):
+			print("No endpoint provided.")
+			config["endpoint"] = "object"
+
+		scroll = Scroll(**kwargs)
+
+		scroll.post_scroll(headers=self.headers)
+		scroll.get_scroll(headers=self.headers)
+			
+		return Results(response, request)
 
 	def view_resource(self, endpoint=None, irn=None):
 		# Build a request to return a single document
@@ -82,7 +98,7 @@ class Scroll():
 		self.duration = duration
 
 		self.status_code = None
-		self.results = None
+		self.results = []
 
 		self.build_query()
 
