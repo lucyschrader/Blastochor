@@ -5,7 +5,7 @@ import json
 import math
 import time
 
-from blastochor.api import askCO
+from blastochor.api.askCO import Search, Scroll, Resource
 from blastochor.settings.Settings import config, stats
 from blastochor.util.ApiRecord import ApiRecord
 from blastochor.util.Mapper import mapping
@@ -18,65 +18,58 @@ class Harvester():
 
     def __init__(self, sleep=1):
         self.sleep = sleep
-        self.API = askCO.CoApi()
 
-    def harvest_from_search(self):
-        # Tell AskCO which searches to run
-        # Get records into Records object
+    def complete_harvest(self, mode):
+        # Gather search/scroll parameters and turn returned records into ApiRecord objects
         endpoint = config.get("endpoint")
-        q = config.get("query")
+        query = config.get("query")
         sort = config.get("sort")
         filters = config.get("filters")
         start = 0
         size = config.get("size")
 
-        count_call = self.API.search(q=q, sort=sort, filters=filters, start=start, size=1)
-        stats.search_result_count = count_call.result_count
-
-        if config.get("max_records") != -1:
-            record_count = config.get("max_records")
-        else:
-            record_count = count_call.result_count
-        if not config.get("quiet"):
-            print("Search record count: {}".format(record_count))
-
-        page_count = math.ceil(record_count/size)
-
-        for i in range(0, page_count):
-            # TODO: Check that response is as expected
-            response = self.API.search(q=q, sort=sort, filters=filters, start=start, size=size)
-
+        if mode == "search":
+            count_call = Search(query=query, sort=sort, filters=filters, start=start, size=1)
+            stats.search_result_count = count_call.results.result_count
             if not config.get("quiet"):
-                if response:
-                    print("Search results page {i} received".format(i=i+1))
+                print("Search record count: {}".format(record_count))
 
-            # TODO: Work out a fix for pagination/scrolling so I don't have to check for duplicates
-            for record in response.records:
-                if records.find_record(endpoint=endpoint, irn=record.get("id")) == None:
+            if config.get("max_records") != -1:
+                record_limit = config.get("max_records")
+            else:
+                record_limit = count_call.results.result_count
+
+            page_count = math.ceil(record_count/size)
+
+            for i in range(0, page_count):
+                search = Search(query=query, sort=sort, filters=filters, start=start, size=size)
+
+                # TODO: Work out a fix for pagination so I don't have to check for duplicates
+                if not search.results.error_code:
+                    for record in search.results.records:
+                        if records.find_record(endpoint=endpoint, irn=record.get("id")) == None:
+                            new_record = ApiRecord(data=record, endpoint=endpoint)
+                            records.append(new_record)
+                            self.check_for_triggers(new_record)
+                        else:
+                            if not config.get("quiet"):
+                                print("Duplicate record: {}".format(record.get("pid")))
+
+                start += size
+                time.sleep(self.sleep)
+
+        elif mode == "scroll":
+            scroll = Scroll(query=query, sort=sort, size=size, filters=filters, duration=1)
+            scroll.post_scroll()
+            scroll.get_scroll()
+
+            stats.search_result_count = scroll.results.result_count
+
+            if not scroll.results.error_code:
+                for record in scroll.results.records:
                     new_record = ApiRecord(data=record, endpoint=endpoint)
                     records.append(new_record)
                     self.check_for_triggers(new_record)
-                else:
-                    if not config.get("quiet"):
-                        print("Duplicate record: {}".format(record.get("pid")))
-
-            start += size
-            time.sleep(self.sleep)
-
-    def harvest_from_scroll(self):
-        endpoint = config.get("endpoint")
-        q = config.get("query")
-        sort = config.get("sort")
-        filters = config.get("filters")
-
-        max_records = config.get("max_records")
-
-        scroll = self.API.scroll(q=q, sort=sort, filters=filters)
-
-        for record in scroll.results:
-            new_record = ApiRecord(data=record, endpoint=endpoint)
-            records.append(new_record)
-            self.check_for_triggers(new_record)
 
     def harvest_from_list(self, irn_list=None, endpoint=None):
         # Tell AskCO which records to query
@@ -92,9 +85,9 @@ class Harvester():
             time.sleep(self.sleep)
 
     def create_single_record(self, endpoint, irn):
-        response = self.API.view_resource(endpoint=endpoint, irn=irn)
-        if response.errors == None:
-            new_record = ApiRecord(data=response.data, endpoint=endpoint)
+        resource = Resource(endpoint=endpoint, irn=irn)
+        if not resource.error_code:
+            new_record = ApiRecord(data=resource.data, endpoint=endpoint)
             records.append(new_record)
             # TODO: run triggers in a batch after harvest
             self.check_for_triggers(new_record)
@@ -124,9 +117,10 @@ class Harvester():
                             print("Reharvest triggered...")
 
                         extension_record = self.create_single_record(endpoint=trigger.harvest_endpoint, irn=irn)
-                        stats.extension_records_count += 1
-                        if trigger.label:
-                            extension_record.relate_record(label=trigger.label, related_record_pid=record.pid)
+                        if extension_record:
+                            stats.extension_records_count += 1
+                            if trigger.label:
+                                extension_record.relate_record(label=trigger.label, related_record_pid=record.pid)
                     else:
                         if trigger.label:
                             extension_record.relate_record(label=trigger.label, related_record_pid=record.pid)
@@ -139,9 +133,10 @@ class Harvester():
                         print("Reharvest triggered...")
                             
                     extension_record = self.create_single_record(endpoint=trigger.harvest_endpoint, irn=extension_irn)
-                    stats.extension_records_count += 1
-                    if trigger.label:
-                        extension_record.relate_record(label=trigger.label, related_record_pid=record.pid)
+                    if extension_record:
+                        stats.extension_records_count += 1
+                        if trigger.label:
+                            extension_record.relate_record(label=trigger.label, related_record_pid=record.pid)
                 else:
                     if trigger.label:
                         this_record.relate_record(label=trigger.label, related_record_pid=record.pid)

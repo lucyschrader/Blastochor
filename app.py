@@ -12,13 +12,12 @@ if __name__ == '__main__':
     stats.start()
 
     harvester = Harvester.harvester
-    if config.get("mode") == "search":
-        harvester.harvest_from_search()
-    elif config.get("mode") == "scroll":
-        harvester.harvest_from_scroll()
-    elif config.get("mode") == "list":
+    mode = config.get("mode")
+    if mode == "list":
         input_list = Settings.InputList(settings.list.source)
         harvester.harvest_from_list(input_list.irn_list)
+    else:
+        harvester.complete_harvest(mode)
 
     for output in Mapper.mapping.outputs:
         output.write_to_csv()

@@ -142,9 +142,9 @@ def fixed_vocab(data, params):
 
 def format_string(data, **kwargs):
     # Find a value and incorporate it into a specified string
-    data = kwargs.get("data")
     string = kwargs.get("string")
     inserts = kwargs.get("inserts")
+    required = kwargs.get("required")
     explode_ordinal = str(kwargs.get("explode_ordinal"))
     parent_pid = kwargs.get("parent_pid")
 
@@ -165,8 +165,16 @@ def format_string(data, **kwargs):
             path = path.split(".")
             value = literal(data, path=path)
             if not value:
-                value = ""
+                if required == True:
+                    continue
+                else:
+                    value = ""
             values.append(value)
+
+    if required:
+        spaces = string.count("{}")
+        if len(values) != spaces:
+            return None
 
     return string.format(*values)
 
@@ -179,19 +187,6 @@ def literal(data, **kwargs):
     path = handle_iterator_in_path(path=kwargs.get("path"), ordinal=kwargs.get("ordinal"))
     value = step_to_field(data=data, path=path)
     return value
-
-def lookup_record(data, irn, endpoint):
-    # Find an IRN in the provided record and return the associated record
-    path = kwargs.get("path")
-    endpoint = kwargs.get("endpoint")
-    ordinal = kwargs.get("ordinal")
-
-    irn = literal(data, path=path, ordinal=ordinal)
-
-    if irn:
-        return records.find_record(endpoint=endpoint, irn=irn)
-    
-    return None
 
 def measurement_conversion(data, params):
     pass
@@ -339,8 +334,13 @@ class FieldProcessor():
             case "format_string":
                 string = params[0]
                 inserts = params[1]
+                try:
+                    if params[2]:
+                        required = True
+                except IndexError:
+                    required = False
                 inserts = inserts.split(", ")
-                return format_string(data, string=string, inserts=inserts, explode_ordinal=self.explode_ordinal, parent_pid=self.parent_pid)
+                return format_string(data, string=string, inserts=inserts, required=required, explode_ordinal=self.explode_ordinal, parent_pid=self.parent_pid)
 
             case "hardcoded":
                 value = params[0]
@@ -368,9 +368,6 @@ class FieldProcessor():
 
             case "measurement_conversion":
                 return measurement_conversion(data, params)
-
-            case "points_to":
-                return points_to(data, params)
 
             case "related":
                 size = params[0]

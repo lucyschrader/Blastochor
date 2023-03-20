@@ -15,20 +15,21 @@ max_list_size: 100
 
 # Run
 mode: scroll
-quiet: False
+quiet: True
 base_url: https://data.tepapa.govt.nz/collection
 endpoint: object
+timeout: 5
+attempts: 3
 
 # List mode settings
 list_source: null
 
-# Search mode settings
-max_records: 50
-size: 50
+# Search/scroll mode settings
+max_records: 1000
+size: 1000
 
-query: "Myosotis"
-sort_field: null
-sort_value: null
+query: "*"
+sort: null
 
 filter:
   collection: Plants

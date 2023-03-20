@@ -215,6 +215,7 @@
       - format_string:
         - "{} of {}"
         - typeStatus, qualifiedName
+        - required
     - identifiedBy:
       - literal:
         - identifiedBy.title
@@ -224,8 +225,8 @@
       - lookup:
         - agent
       - conditional:
-        - related.contentUrl
-        - related.title=ORCID
+        - related.i.contentUrl
+        - related.i.title=ORCID
     - dateIdentified:
       - literal:
         - dateIdentified

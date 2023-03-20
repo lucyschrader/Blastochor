@@ -8,6 +8,15 @@ This repo includes a basic mapping file that will be used if another is not prov
 
 [API documentation](https://data.tepapa.govt.nz/docs/)
 
+## Still to do
+- A complete default mapping that dumps out as much data as possible
+- Conditional inclusion of records after harvest has run (eg only write out if x field is present, if image size is over x pixels)
+- Sample mode to pull down representative range of records for testing
+- Output as json
+- Command line options to run a search or single record, returning json or flattened default csv
+- Front end to create mapping file and run from browser
+- Look into how easily this app could be forked for other museum APIs
+
 ## Installation
 Clone this repo using `git clone`. Install the following packages:
 - Requests
@@ -20,7 +29,7 @@ If using a custom mapping, this should sit alongside Config.yml.
 ## Usage
 Edit the `Config.yml` file to set search and export parameters.
 
-The main functional setting is `search` or `list`. You can either send a search query, which will page through and return all relevant records, or provide the app with a list of IRNs (internal reference numbers, Te Papa's record identifiers), which will be individually queried and returned.
+The main functional setting is `search`, `scroll` or `list`. You can either send a search query, which will page through and return all relevant records (limit 50K), scroll through all records (no limit) or provide the app with a list of IRNs (internal reference numbers, Te Papa's record identifiers), which will be individually queried and returned.
 
 When your config and mapping are ready, run the app with `python Blastochor.py`.
 
@@ -40,17 +49,18 @@ When your config and mapping are ready, run the app with `python Blastochor.py`.
 `quiet`: Set to False if you want progress messages written to the CLI. Default is True
 `base_url`: URL used to query the API. Default is https://data.tepapa.govt.nz/collection/
 `endpoint`: Used when querying individual records. Set to the primary endpoint you want data from. Default is object
+`timeout`: How long in seconds to allow each query before timing out and retrying. Default is 5
+`attempts`: How many times to retry each query before returning None. Default is 3
 
 ### List mode settings
 `list_source`: Filename for list of IRNs to query
 
-### Search mode settings
+### Search/scroll mode settings
 `max-records`: Set a limit on the number of records you want to export. Default is -1 (no limit)
 `size`: Set a limit on the number of records returned in one page of results. Default is 100
 
 `query`: String to search for. Default is * (wildcard)
-`sort_field`: Fieldname to sort results by, such as id, \_meta.modified. Default is null (sorts by id)
-`sort_value`: Direction of sort, asc or desc. Default is null (sorts asc)
+`sort`: Fieldname to sort results by, such as id, \_meta.modified. Add a `-` before the field to sort in reverse order. Default is null (sorts by id)
 
 Filters:
 `collection`: Set collection to constrain search. Uses the APIs collection labels (PacificCultures, not Pacific Cultures). Default is null
@@ -75,18 +85,18 @@ Each output file is a list item containing a dictionary of options.
 
 ### Extend
 `extend` contains a list of triggers, identifying certain fields that contain IRNs that should also be harvested. For example:
-endpoint: fieldcollection
-path: evidenceFor.atEvent.id
-for_label: event
+    endpoint: fieldcollection
+    path: evidenceFor.atEvent.id
+    for_label: event
 
 This checks harvested records for an IRN in the evidenceFor.atEvent.id field. If found, it will send a separate query to the fieldcollection endpoint, storing the record for later use in the `event` file.
 
 If the record has already been harvested, the record object will just be updated with a flag that it needs to be included in that file.
 
 To output another CSV with the same endpoint as the core file, just point the extend rule back to the source. For example:
-endpoint: object
-path: id
-for_label: identification
+    endpoint: object
+    path: id
+    for_label: identification
 
 If `for_label` is `null`, the record will be saved but not written out anywhere - do this if you just need some of the record's data for another function.
 
@@ -96,9 +106,9 @@ The `fields` section contains a list of data transformation rules, headed up wit
 Each field then contains a list of functions (just one or several), which contain the API fields, strings, integers, or other parameters they'll be working on.
 
 For example:
-- occurrenceID:
-  - literal:
-    - pid
+    - occurrenceID:
+      - literal:
+        - pid
 
 This means the file will have a column called `occurrenceID`, which take a straight copy of the contents of the record's `pid` field.
 
@@ -135,7 +145,7 @@ Joins values in a list using " | ", after removing None values. Use after callin
 - parameters: null
 
 `conditional`
-Returns a value for a given field if another field matches a specified value, indicated using `=`. Both paths need to be in the same section of the record.
+Returns a value for a given field if another field matches a specified value, indicated using `=`. Both paths need to be in the same section of the record. If the path given points to a list, each child of the list will be checked. If multiple values match only the first will be returned.
 - parameters: path to field and path to field to check, with the specified value
 - example: `related.i.contentUrl` and `related.i.title=ORCID`
 
@@ -144,11 +154,27 @@ Finds a country name in a record and looks up its ISO 2-character country code.
 - parameters: path to a field that contains a country name
 - example: `evidenceFor.atEvent.atLocation.country`
 
+`for_each`
+Used after another function that returns a list. Goes through and performs further transformations on each member. You can add the `concatenate` function below `for_each`, or it will automatically happen when writing out. Format this in the mapping document by nesting the rest of the functions below, for example:
+    - recordedByID:
+      - collate_list:
+        - evidenceFor.atEvent.recordedBy.i.id
+      - for_each:
+        - lookup:
+          - agent
+        - conditional:
+          - related.i.contentUrl
+          - related.i.title=ORCID
+      - concatenate:
+        - null
+
+This finds the agent id for every person at a specimen collection event, looks them up one at a time, and checks if they have an ORCID identifier. None values get stripped out once all child functions have run.
+
 `format_string`
-Finds a value and inserts it into a provided string at a specified place. Mark the location for the value using `{}`. Intend to update this function to allow multiple substitutions.
-TODO: Option to return None if no value is found, instead of an unformatted string
-- parameters: string, path to field
+Finds a value and inserts it into a provided string at a specified place. Mark the location for each value using `{}`. Include an optional third parameter `required` to return None if any of the values are unavailable.
+- parameters: string, path to field (if more than one, separated with `, `), required (optional)
 - example: `https://collections.tepapa.govt.nz/object/{}` and `id`
+- example: `{} of {}` and `typeStatus, qualifiedName` and `required`
 
 `lookup`
 Find an IRN in the record and return the associated record for the next function. Record needs to have been harvested either directly or using `extend` functionality.
@@ -162,4 +188,4 @@ Try multiple paths in order and return the value of the first available one. Use
 `related`
 Make a fresh query to the special /related endpoint for the current record, returning records that are connected in some way. Can only be used on a complete record as it requires the `href` value. Set a size to limit the number of results (default is 100), and specify types of records to filter down.
 - parameters: size (int) and types (Capitalise, separate with `,`)
-- example: `50` and `Object,Specimen`
+- example: `50` and `Object,Specimen` (note the lack of a space between the types)

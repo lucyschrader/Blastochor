@@ -37,10 +37,20 @@ def update_settings():
 
     # TODO: Return error if no mode selected
     if not config.get("mode"):
-        print("No mode selected - should be search or list")
+        print("No mode selected - should be search, scroll or list")
 
-    if config.get("sort_field"):
-        config["sort"] = {config.get("sort_field"): search_config.get("sort_value")}
+    if not config.get("endpoint"):
+        print("No endpoint provided. Setting to object")
+        config["endpoint"] = "object"
+
+    if not config.get("timeout"):
+        config["timeout"] = 5
+
+    if not config.get("attempts"):
+        config["attempts"] = 3
+
+    if not config.get("query"):
+        config["query"] == "*"
 
 def populate_skiplist():
     config["skiplist"] = []
@@ -136,7 +146,7 @@ class AppStats():
         print("Script ran in {} seconds".format(self.run_time))
         print("Script made {} API calls".format(self.api_call_count))
 
-        if config.get("mode") == "search":
+        if config.get("mode") == "search" or "scroll":
             print("Script found {} search results".format(self.search_result_count))
         elif config.get("mode") == "list":
             print("Script queried {} records from source list".format(self.list_count))
