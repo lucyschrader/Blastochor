@@ -35,21 +35,34 @@ When your config and mapping are ready, run the app with `python -m app`.
 
 ### Setup
 `api_key_env`: Environment name for your unique API key. Default is TE-PAPA-KEY
+
 `mapping_file`: Filename for file containing data mapping rules. Default is null (points to a default mapping inside the app)
+
 `corefile`: If exporting multiple files, set to the label of the primary file, eg "core". Default is null
+
 `input_dir`: Directory holding any source files, like a skiplist or list or IRNs. Default is input_files
+
 `output_dir`: Directory for exported CSVs. Default is output_files
+
 `use_skiplist`: Set to True if using a skiplist. Default is False
+
 `skipfile`: Filename for skiplist. Default is null
+
 `min_image_size`: Only export object records that have images that are at least this many px on each side. Default is blank
+
 `max_list_size`: Only collate lists of values into a single value up to the specified size. Default is 100
 
 ### Run
 `mode`: Set to search or list. Default is search
+
 `quiet`: Set to False if you want progress messages written to the CLI. Default is True
+
 `base_url`: URL used to query the API. Default is https://data.tepapa.govt.nz/collection/
+
 `endpoint`: Used when querying individual records. Set to the primary endpoint you want data from. Default is object
+
 `timeout`: How long in seconds to allow each query before timing out and retrying. Default is 5
+
 `attempts`: How many times to retry each query before returning None. Default is 3
 
 ### List mode settings
@@ -57,15 +70,20 @@ When your config and mapping are ready, run the app with `python -m app`.
 
 ### Search/scroll mode settings
 `max-records`: Set a limit on the number of records you want to export. Default is -1 (no limit)
+
 `size`: Set a limit on the number of records returned in one page of results. Default is 100
 
 `query`: String to search for. Default is * (wildcard)
+
 `sort`: Fieldname to sort results by, such as id, \_meta.modified. Add a `-` before the field to sort in reverse order. Default is null (sorts by id)
 
 Filters:
 `collection`: Set collection to constrain search. Uses the APIs collection labels (PacificCultures, not Pacific Cultures). Default is null
+
 `allows_download`: Set to True to only return object records that include downloadable images, False to only return records that don't. Default is null
+
 `keyword_fields`: Fieldnames for extra filters on your search. Separate with `, `
+
 `keyword_values`: Values for extra filters. Ensure you have the same number of terms as `keyword_fields` and they're in the right order. Separate with `, `
 
 ## Mapping
@@ -85,18 +103,22 @@ Each output file is a list item containing a dictionary of options.
 
 ### Extend
 `extend` contains a list of triggers, identifying certain fields that contain IRNs that should also be harvested. For example:
-    endpoint: fieldcollection
-    path: evidenceFor.atEvent.id
-    for_label: event
+```
+endpoint: fieldcollection
+path: evidenceFor.atEvent.id
+for_label: event
+```
 
 This checks harvested records for an IRN in the evidenceFor.atEvent.id field. If found, it will send a separate query to the fieldcollection endpoint, storing the record for later use in the `event` file.
 
 If the record has already been harvested, the record object will just be updated with a flag that it needs to be included in that file.
 
 To output another CSV with the same endpoint as the core file, just point the extend rule back to the source. For example:
-    endpoint: object
-    path: id
-    for_label: identification
+```
+endpoint: object
+path: id
+for_label: identification
+```
 
 If `for_label` is `null`, the record will be saved but not written out anywhere - do this if you just need some of the record's data for another function.
 
@@ -106,9 +128,11 @@ The `fields` section contains a list of data transformation rules, headed up wit
 Each field then contains a list of functions (just one or several), which contain the API fields, strings, integers, or other parameters they'll be working on.
 
 For example:
-    - occurrenceID:
-      - literal:
-        - pid
+```
+- occurrenceID:
+  - literal:
+    - pid
+```
 
 This means the file will have a column called `occurrenceID`, which take a straight copy of the contents of the record's `pid` field.
 
@@ -119,6 +143,7 @@ Functions can be chained together by adding them as further list items.
 
 ### Available functions
 `literal`
+
 Copies the value at the given location
 - parameters: path to field. If the path includes a list, add an integer to copy a specified list member - if no integer is provided for a list, it will just get the first (`0`) value.
 - example: `pid`
@@ -126,66 +151,79 @@ Copies the value at the given location
 - example: `production.i.creator.title, 1`
 
 `hardcoded`
+
 Sets the value to the string provided.
 - parameters: a string
-- example: "https://data.tepapa.govt.nz"
+- example: `https://data.tepapa.govt.nz`
 
 `collate_list`
+
 Gets all values of a field within a list. Automatically concatenated with " | " before writing out. Maximum length of list is controlled in `Config.yml`.
 - parameters: path to field
 - example: `hasRepresentation.i.rights.title`
 
 `clean_html`
+
 Removes unwanted html markup from a value, such as a `description`.
 TODO: Actually do some cleaning here.
 - parameters: path to field
 
 `concatenate`
+
 Joins values in a list using " | ", after removing None values. Use after calling another function that produces a list
 - parameters: null
 
 `conditional`
+
 Returns a value for a given field if another field matches a specified value, indicated using `=`. Both paths need to be in the same section of the record. If the path given points to a list, each child of the list will be checked. If multiple values match only the first will be returned.
 - parameters: path to field and path to field to check, with the specified value
 - example: `related.i.contentUrl` and `related.i.title=ORCID`
 
 `country_code`
+
 Finds a country name in a record and looks up its ISO 2-character country code.
 - parameters: path to a field that contains a country name
 - example: `evidenceFor.atEvent.atLocation.country`
 
 `for_each`
+
 Used after another function that returns a list. Goes through and performs further transformations on each member. You can add the `concatenate` function below `for_each`, or it will automatically happen when writing out. Format this in the mapping document by nesting the rest of the functions below, for example:
-    - recordedByID:
-      - collate_list:
-        - evidenceFor.atEvent.recordedBy.i.id
-      - for_each:
-        - lookup:
-          - agent
-        - conditional:
-          - related.i.contentUrl
-          - related.i.title=ORCID
-      - concatenate:
-        - null
+```
+- recordedByID:
+  - collate_list:
+    - evidenceFor.atEvent.recordedBy.i.id
+  - for_each:
+    - lookup:
+      - agent
+    - conditional:
+      - related.i.contentUrl
+      - related.i.title=ORCID
+  - concatenate:
+    - null
+```
 
 This finds the agent id for every person at a specimen collection event, looks them up one at a time, and checks if they have an ORCID identifier. None values get stripped out once all child functions have run.
 
 `format_string`
+
 Finds a value and inserts it into a provided string at a specified place. Mark the location for each value using `{}`. Include an optional third parameter `required` to return None if any of the values are unavailable.
 - parameters: string, path to field (if more than one, separated with `, `), required (optional)
 - example: `https://collections.tepapa.govt.nz/object/{}` and `id`
 - example: `{} of {}` and `typeStatus, qualifiedName` and `required`
 
 `lookup`
+
 Find an IRN in the record and return the associated record for the next function. Record needs to have been harvested either directly or using `extend` functionality.
 - parameters: endpoint and path to field for the record's IRN
 - example: `agent` and `production.i.contributor.id`
 
 `prioritise`
+
 Try multiple paths in order and return the value of the first available one. Useful when trying to return the most precise available location.
 - parameters: list of paths, separated by `, `
 
 `related`
+
 Make a fresh query to the special /related endpoint for the current record, returning records that are connected in some way. Can only be used on a complete record as it requires the `href` value. Set a size to limit the number of results (default is 100), and specify types of records to filter down.
-- parameters: size (int) and types (Capitalise, separate with `,`)
-- example: `50` and `Object,Specimen` (note the lack of a space between the types)
+- parameters: size (int) and types (Capitalise, separate with `,` - note the lack of a space character)
+- example: `50` and `Object,Specimen`
