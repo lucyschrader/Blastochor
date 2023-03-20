@@ -31,7 +31,7 @@ Edit the `Config.yml` file to set search and export parameters.
 
 The main functional setting is `search`, `scroll` or `list`. You can either send a search query, which will page through and return all relevant records (limit 50K), scroll through all records (no limit) or provide the app with a list of IRNs (internal reference numbers, Te Papa's record identifiers), which will be individually queried and returned.
 
-When your config and mapping are ready, run the app with `python Blastochor.py`.
+When your config and mapping are ready, run the app with `python -m app`.
 
 ### Setup
 `api_key_env`: Environment name for your unique API key. Default is TE-PAPA-KEY
