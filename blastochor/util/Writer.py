@@ -43,3 +43,4 @@ class OutputCSV():
 				row.append(value)
 
 			self.writer.writerow(row)
+			

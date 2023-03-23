@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import json
-from blastochor.settings.Settings import config
+from blastochor.settings.Settings import config, stats
 from blastochor.util.Mapper import mapping
 from blastochor.util.Records import records
 from blastochor.util import Writer
@@ -14,11 +14,29 @@ class ApiRecord():
         self.pid = self.data.get("pid")
         self.irn = self.data.get("id")
 
-        # TODO: If a record points back to itself (eg identification to main object record) add a pointer to structure
+        self.check_quality_score()
+
         self.make_writable()
 
         if not config.get("quiet"):
             print("Record created: {e}, {i}".format(e=self.endpoint, i=self.irn))
+
+    def check_quality_score(self):
+        # If part of the primary harvest, save the upper and lower bounds of qualityScores for the result set
+        if self.endpoint == config.get("endpoint"):
+            quality_score = self.data.get("_meta").get("qualityScore")
+            if quality_score:
+                if not stats.quality_score_lower:
+                    stats.quality_score_lower = quality_score
+                else:
+                    if quality_score < stats.quality_score_lower:
+                        stats.quality_score_lower = quality_score
+                if not stats.quality_score_upper:
+                    stats.quality_score_upper = quality_score
+                else:
+                    if quality_score > stats.quality_score_upper:
+                        stats.quality_score_upper = quality_score
+
 
     def make_writable(self):
         for output in mapping.outputs:

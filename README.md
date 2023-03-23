@@ -52,6 +52,12 @@ When your config and mapping are ready, run the app with `python -m app`.
 
 `max_list_size`: Only collate lists of values into a single value up to the specified size. Default is 100
 
+`group_rows`: If exploding records into multiple rows, set to true to group them under a parent row. Default is null
+
+`parent_label`: If grouping rows, sets a label for the parent. Only used if `group_rows` is true
+
+`parent_fields`, `child_fields`, `ungrouped_fields`: Specify fields that need to be included or excluded for each kind of row. Set `include` to true to only include the specified fields, or false to include everything except those specified. Only used if `group_rows` is true
+
 ### Run
 `mode`: Set to search or list. Default is search
 
@@ -71,16 +77,17 @@ When your config and mapping are ready, run the app with `python -m app`.
 ### Search/scroll mode settings
 `max-records`: Set a limit on the number of records you want to export. Default is -1 (no limit)
 
-`size`: Set a limit on the number of records returned in one page of results. Default is 100
+`size`: Set a limit on the number of records returned in one page of results. Set to a maximum of 1000 for scroll. Default is 100
 
 `query`: String to search for. Default is * (wildcard)
 
 `sort`: Fieldname to sort results by, such as id, \_meta.modified. Add a `-` before the field to sort in reverse order. Default is null (sorts by id)
 
 Filters:
+
 `collection`: Set collection to constrain search. Uses the APIs collection labels (PacificCultures, not Pacific Cultures). Default is null
 
-`allows_download`: Set to True to only return object records that include downloadable images, False to only return records that don't. Default is null
+`allows_download`: Set to true to only return object records that include downloadable images, false to only return records that don't. Default is null
 
 `keyword_fields`: Fieldnames for extra filters on your search. Separate with `, `
 
@@ -152,7 +159,7 @@ Copies the value at the given location
 
 `hardcoded`
 
-Sets the value to the string provided.
+Sets the value to the string provided. Set the parameter to `explode_ordinal` if you want the value to be the row's order within the record.
 - parameters: a string
 - example: `https://data.tepapa.govt.nz`
 
@@ -164,9 +171,8 @@ Gets all values of a field within a list. Automatically concatenated with " | " 
 
 `clean_html`
 
-Removes unwanted html markup from a value, such as a `description`.
-TODO: Actually do some cleaning here.
-- parameters: path to field
+Removes unwanted html markup from a value previously returned, such as a `description`.
+- parameters: null
 
 `concatenate`
 
@@ -185,9 +191,30 @@ Finds a country name in a record and looks up its ISO 2-character country code.
 - parameters: path to a field that contains a country name
 - example: `evidenceFor.atEvent.atLocation.country`
 
+`create_filename`
+
+Use after a function that returns a string. Replaces unsafe characters (` , ?, \, :, ;` and so on) with an underscore, or removes them.
+- parameters: suffix to append to the filename
+- example: `jpg`
+
+`fallback`
+
+Use to substitute another value if the original request returns None. Next another set of functions and parameters underneath.
+```
+- format_string:
+  - {} ({})
+  - production.i.contributor.title, production.i.role
+  - required
+- fallback:
+  - literal:
+    - production.i.contributor.title
+```
+
+This returns a formatted string if both a contributor's title and their role are present. Because `format_string` uses the required parameter, if there's no `role` the function will return None, and then just the title will be returned as a literal value.
+
 `for_each`
 
-Used after another function that returns a list. Goes through and performs further transformations on each member. You can add the `concatenate` function below `for_each`, or it will automatically happen when writing out. Format this in the mapping document by nesting the rest of the functions below, for example:
+Use after another function that returns a list. Goes through and performs further transformations on each member. You can add the `concatenate` function below `for_each`, or it will automatically happen when writing out. Format this in the mapping document by nesting the rest of the functions below, for example:
 ```
 - recordedByID:
   - collate_list:
@@ -217,6 +244,12 @@ Find an IRN in the record and return the associated record for the next function
 - parameters: endpoint and path to field for the record's IRN
 - example: `agent` and `production.i.contributor.id`
 
+`must_match`
+
+After pulling out a value or list of values, check each term against an authority list and only keep the ones you want.
+- parameters: list of authority terms, separated with `, `. Make sure they're all lowercase
+- example: `canvas, paper, plaster, cardboard, ceramic, wood, clay`
+
 `prioritise`
 
 Try multiple paths in order and return the value of the first available one. Useful when trying to return the most precise available location.
@@ -227,3 +260,15 @@ Try multiple paths in order and return the value of the first available one. Use
 Make a fresh query to the special /related endpoint for the current record, returning records that are connected in some way. Can only be used on a complete record as it requires the `href` value. Set a size to limit the number of results (default is 100), and specify types of records to filter down.
 - parameters: size (int) and types (Capitalise, separate with `,` - note the lack of a space character)
 - example: `50` and `Object,Specimen`
+
+`use_config`
+
+Pull a specified term out of the config file. Can also use `hardcoded` but lets you avoid doubling up if you change the parameter.
+- parameters: a string
+- example: `base_url`
+
+`use_group_labels`
+
+If grouping rows for each record, lets you set a label for the parent row, each child row, and standalone rows.
+- parameters: three strings, can be null
+- example: `sequence`, `image`, `image`

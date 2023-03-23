@@ -133,6 +133,8 @@ class AppStats():
         self.list_count = 0
         self.extension_records_count = 0
         self.file_write_counts = {}
+        self.quality_score_lower = None
+        self.quality_score_upper = None
 
     def start(self):
         self.start_time = datetime.now()

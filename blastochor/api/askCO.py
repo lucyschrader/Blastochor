@@ -8,7 +8,7 @@ class Query():
 	# Run a single query to the API to return either a page of results or a single resource
 	# Provide a method (either GET or POST), a complete URL, and whether redirects are allowed
 	# Redirects cannot be allowed on a scroll POST request
-	def __init__(self, method=None, url=None, allow_redirects=True):
+	def __init__(self, method=None, url=None, data=None, allow_redirects=True):
 		auth_key = "x-api-key"
 		auth_value = config.get("api_key")
 		headers = {auth_key: auth_value, "Content-Type": "application/json", "Accept": "application/json;profiles=tepapa.collections.api.v1"}
@@ -17,6 +17,7 @@ class Query():
 
 		self.response = None
 
+		# TODO: Look into better API reliablity and/or ability to pause and pick up if timing out
 		for attempt in range(attempts):
 			if self.response == None:
 				try:
@@ -25,7 +26,7 @@ class Query():
 					if method == "GET":
 						self.response = get(url, headers=headers, timeout=timeout, allow_redirects=allow_redirects)
 					elif method == "POST":
-						self.response = post(url, headers=headers, timeout=timeout, allow_redirects=allow_redirects)
+						self.response = post(url, data=data, headers=headers, timeout=timeout, allow_redirects=allow_redirects)
 				except exceptions.Timeout:
 					if not config.get("quiet"):
 						print("{} timed out!".format(url))
@@ -33,15 +34,23 @@ class Query():
 				except exceptions.ConnectionError:
 					if not config.get("quiet"):
 						print("Disconnected trying to get {}".format(url))
+					time.sleep(1)
+				except exceptions.HTTPError:
+					if not config.get("quiet"):
+						print(response.status_code)
+					time.sleep(1)
 			else:
 				stats.api_call_count +=1
+
+		if self.response == None:
+			print("Query {m} {u} failed".format(m=method, u=url))
 
 class Search():
 	def __init__(self, **kwargs):
 		# Build a search for a specified page of records
 		self.method = None
 		self.request_url = config.get("base_url")
-		self.request_body = {}
+		self.request_body = None
 
 		self.query = kwargs.get("query")
 		self.fields = kwargs.get("fields")
@@ -56,30 +65,32 @@ class Search():
 
 		self.build_query()
 
-		response = Query(method=self.method, url=self.request_url).response
+		response = Query(method=self.method, data=self.request_body, url=self.request_url).response
 		if response.status_code == 200:
-			self.records = Results(response=response, request=self.request_url)
+			self.results = Results(response=response, request=self.request_url)
 
 	def build_query(self):
 		if config.get("endpoint") == "object":
 			self.request_url += "/search"
 			self.method = "POST"
+			self.request_body = {}
 
 			if self.query:
-				self.post_body.update(self._singleValueFormatter("query", self.query))
+				self.request_body.update(self._singleValueFormatter("query", self.query))
 			if self.fields:
-				self.post_body.update(self._multiValueFormatter("fields", self.fields))
+				self.request_body.update(self._multiValueFormatter("fields", self.fields))
 			if self.sort:
-				self.post_body.update(self._singleValueFormatter("sort", self.sort))
+				self.request_body.update(self._singleValueFormatter("sort", self.sort))
 			if self.start:
-				self.post_body.update(self._singleValueFormatter("from", self.start))
+				self.request_body.update(self._singleValueFormatter("from", self.start))
 			if self.size:
-				self.post_body.update(self._singleValueFormatter("size", self.size))
+				self.request_body.update(self._singleValueFormatter("size", self.size))
 			if self.filters:
-				self.post_body.update(self._singleValueFormatter("filters", self.filters))
+				self.request_body.update(self._singleValueFormatter("filters", self.filters))
 
 			# CO API requires post data to be json-encoded, not form-encoded
-			self.post_body = json.dumps(self.post_body)
+			self.request_body = json.dumps(self.request_body)
+
 		else:
 			self.request_url += "/{}?q=".format(config.get("endpoint"))
 			self.method = "GET"
@@ -170,16 +181,22 @@ class Scroll():
 				print("Scroll get url: {}".format(self.scroll_get_url))
 
 	def get_scroll(self):
+		i = 1
 		while self.status_code == 303:
 			if self.record_limit:
 				if len(self.results.records) >= self.record_limit:
 					if not config.get("quiet"):
 						print("Scroll hit record limit")
-						break
-			response = Query(method="GET", url=self.scroll_get_url).response
+					break
+			response = Query(method="GET", url=self.scroll_get_url, allow_redirects=False).response
 			if response.status_code == 303:
 				self.results.add_records(response=response)
+			elif response.status_code == 204:
+				print("No more results")
+			elif response.status_code == 422:
+				print("Duration limit exceeded")
 			self.status_code = response.status_code
+			i += 1
 
 class Results():
 	# Results object for a completed search or scroll
@@ -230,11 +247,18 @@ class Resource():
 	def get_resource(self):
 		self.request_url += "/{endpoint}/{irn}".format(endpoint=self.endpoint, irn=self.irn)
 		response = Query(method="GET", url=self.request_url).response
-		
-		self.status = response.status_code
-		response_json = json.loads(response.text)
-		if response_json.get("errorCode"):
-			self.error_code = self.response_json.get("errorCode")
-			self.error_message = self.response_json.get("userMessage")
+
+		if response:
+			self.status = response.status_code
+			response_json = json.loads(response.text)
+			if response_json.get("errorCode"):
+				self.error_code = self.response_json.get("errorCode")
+				self.error_message = self.response_json.get("userMessage")
+			else:
+				self.data = json.loads(response.text)
 		else:
-			self.data = json.loads(response.text)
+			self.error_code = "No response"
+			self.error_message = "No data was returned by the API when the given url was queried."
+			if not config.get("quiet"):
+				print(self.error_message)
+				print("URL requested: {}".format(self.request_url))

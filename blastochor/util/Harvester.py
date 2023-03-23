@@ -32,14 +32,14 @@ class Harvester():
             count_call = Search(query=query, sort=sort, filters=filters, start=start, size=1)
             stats.search_result_count = count_call.results.result_count
             if not config.get("quiet"):
-                print("Search record count: {}".format(record_count))
+                print("Search record count: {}".format(stats.search_result_count))
 
             if config.get("max_records") != -1:
                 record_limit = config.get("max_records")
             else:
                 record_limit = count_call.results.result_count
 
-            page_count = math.ceil(record_count/size)
+            page_count = math.ceil(record_limit/size)
 
             for i in range(0, page_count):
                 search = Search(query=query, sort=sort, filters=filters, start=start, size=size)
@@ -63,6 +63,7 @@ class Harvester():
             scroll.post_scroll()
             scroll.get_scroll()
 
+            print("Scroll complete")
             stats.search_result_count = scroll.results.result_count
 
             if not scroll.results.error_code:
@@ -70,6 +71,8 @@ class Harvester():
                     new_record = ApiRecord(data=record, endpoint=endpoint)
                     records.append(new_record)
                     self.check_for_triggers(new_record)
+
+            print("All records saved")
 
     def harvest_from_list(self, irn_list=None, endpoint=None):
         # Tell AskCO which records to query

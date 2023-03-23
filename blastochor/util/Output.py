@@ -44,12 +44,7 @@ class Output():
             print("Writing {} records to file".format(len(list(output_records))))
 
         for record in output_records:
-            if self.reduce_on:
-                reduce_path = self.reduce_on.split(".")
-                data = processor.step_to_field(record.data, reduce_path)
-            else:
-                data = record.data
-            
+            # Checks if the record's rows need to point to another record
             pointers = record.structure.get(self.label).get("pointers")
 
             if not config.get("quiet"):
@@ -57,53 +52,103 @@ class Output():
 
             if len(pointers) > 0:
                 for pointer in pointers:
-                    self.check_explode(data=data, pointer=pointer, parent_pid=record.pid)
+                    self.chop_up_record(record, pointer)
             else:
-                self.check_explode(data=data, pointer=None, parent_pid=record.pid)
+                self.chop_up_record(record)
+                
+            stats.file_write_counts[self.label] += 1
+            
+        for output_row in self.rows:
+            processor.FieldProcessor(self.rules, output_row)
 
-    def check_explode(self, data, pointer, parent_pid):
+    def chop_up_record(self, record=None, pointer=None):
+        kwargs = {}
+        kwargs["data"] = None
+        kwargs["pointer"] = pointer
+        kwargs["rules"] = self.rules
+        kwargs["record_pid"] = record.pid
+        kwargs["explode_ordinal"] = None
+        kwargs["group_role"] = None
+
+        # Cuts down the record to a subset if needed
+        if self.reduce_on:
+            reduce_path = self.reduce_on.split(".")
+            data = processor.step_to_field(record.data, reduce_path)
+        else:
+            data = record.data
+
+        # Checks if the record explodes at the same level it's reduced to
+        explode_reduce = False
+        if self.reduce_on == self.explode_on:
+            explode_reduce = True
+
+        # Runs if the record should be checked for multiple rows
         if self.explode_on:
-            if self.reduce_on == self.explode_on:
-                explode_size = len(data)
-                if explode_size > 1:
-                    for i in range(0, explode_size-1):
-                        this_data = data[i]
-                        self.rows.append(OutputRow(data=this_data, pointer=pointer, explode_ordinal=i, rules=self.rules, parent_pid=parent_pid))
-                        stats.file_write_counts[self.label] += 1
-                else:
-                    this_data = data[0]
-                    self.rows.append(OutputRow(data=this_data, pointer=pointer, explode_ordinal=0, rules=self.rules, parent_pid=parent_pid))
-                    stats.file_write_counts[self.label] += 1
-            else:
+            # Works out how many rows should be written
+            if explode_reduce == False:
                 explode_data = processor.step_to_field(data, self.explode_on)
                 if explode_data:
                     explode_size = len(explode_data)
-                    if explode_size > 1:
-                        for i in range(0, explode_size-1):
-                            self.rows.append(OutputRow(data=data, pointer=pointer, explode_on=self.explode_on, explode_ordinal=i, rules=self.rules, parent_pid=parent_pid))
-                            stats.file_write_counts[self.label] += 1
+                else:
+                    return None
+            else:
+                explode_size = len(data)
+
+            # Runs if there are multiple rows to write out
+            if explode_size > 1:
+                # Runs if multiple rows should be grouped with a parent row
+                if config.get("group_rows"):
+                    if explode_reduce == True:
+                        kwargs["data"] = data[0]
                     else:
-                         self.rows.append(OutputRow(data=data, pointer=pointer, explode_on=self.explode_on, explode_ordinal=0, rules=self.rules, parent_pid=parent_pid))
-                         stats.file_write_counts[self.label] += 1
+                        kwargs["data"] = data
+                    kwargs["group_role"] = "parent"
+                    kwargs["explode_ordinal"] = 0
+                    # Writes parent row
+                    self.rows.append(OutputRow(**kwargs))
+                    for i in range(0, explode_size):
+                        if explode_reduce == True:
+                            kwargs["data"] = data[i]
+                        else:
+                            kwargs["data"] = data
+                        kwargs["group_role"] = "child"
+                        kwargs["explode_ordinal"] = i
+                        # Writes each child row
+                        self.rows.append(OutputRow(**kwargs))
+                # Runs if multiple rows don't need to be grouped
+                else:
+                    for i in range(0, explode_size):
+                        if explode_reduce == True:
+                            kwargs["data"] = data[i]
+                        else:
+                            kwargs["data"] = data
+                        kwargs["group_role"] = None
+                        kwargs["explode_ordinal"] = i
+                        self.rows.append(OutputRow(**kwargs))
+            # Runs if there is only one row needed
+            else:
+                kwargs["data"] = data
+                kwargs["group_role"] = None
+                kwargs["explode_ordinal"] = None
+                self.rows.append(OutputRow(**kwargs))
+        # Runs if the record isn't being exploded
         else:
-            self.rows.append(OutputRow(data=data, pointer=pointer, rules=self.rules, parent_pid=parent_pid))
-            stats.file_write_counts[self.label] += 1
+            kwargs["data"] = data
+            kwargs["group_role"] = None
+            kwargs["explode_ordinal"] = None
+            self.rows.append(OutputRow(**kwargs))
 
 class OutputRow():
-    def __init__(self, data=None, pointer=None, explode_on=None, explode_ordinal=None, rules=None, parent_pid=None):
+    def __init__(self, data=None, pointer=None, explode_on=None, explode_ordinal=None, explode_parent_value=None, group_role=None, explode_child_fields=None, explode_parent_fields=None, rules=None, record_pid=None):
         self.data = data
         self.pointer = pointer
-        self.parent_pid = parent_pid
         self.explode_on = explode_on
         self.explode_ordinal = explode_ordinal
-        self.values = {}
-
+        self.explode_parent_value = explode_parent_value
+        self.group_role = group_role
+        self.explode_child_fields = explode_child_fields
+        self.explode_parent_fields = explode_parent_fields
         self.rules = rules
+        self.record_pid = record_pid
 
-        self.populate_values()
-
-    def populate_values(self):
-        for rule in self.rules:
-            key = rule.output_fieldname
-            value = processor.FieldProcessor(data=self.data, rule=rule, explode_on=self.explode_on, explode_ordinal=self.explode_ordinal, parent_pid=self.parent_pid).value
-            self.values.update({key: value})
+        self.values = {}
