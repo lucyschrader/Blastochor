@@ -244,9 +244,22 @@ Find an IRN in the record and return the associated record for the next function
 - parameters: endpoint and path to field for the record's IRN
 - example: `agent` and `production.i.contributor.id`
 
+`map_value`
+
+Use after another function that returns a value - can be a single value or a list. Each parameter for this function contains a source value and what to map it to. Each value in a list will be checked. If the value doesn't match a parameter's key, will return None. Note that this function's parameters are dictionary key/value pairs, and don't include the starting `-`.
+- parameters: key/value pairs
+- example:
+
+```
+- literal:
+  - restrictLocalityData
+- map_value:
+  true: precise location information not given for threatened species
+```
+
 `must_match`
 
-After pulling out a value or list of values, check each term against an authority list and only keep the ones you want.
+Not currently working! After pulling out a value or list of values, check each term against an authority list and only keep the ones you want.
 - parameters: list of authority terms, separated with `, `. Make sure they're all lowercase
 - example: `canvas, paper, plaster, cardboard, ceramic, wood, clay`
 

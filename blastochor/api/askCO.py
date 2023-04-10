@@ -51,6 +51,9 @@ class Search():
 		self.method = None
 		self.request_url = config.get("base_url")
 		self.request_body = None
+		self.sleep = kwargs.get("sleep")
+
+		self.endpoint = kwargs.get("endpoint")
 
 		self.query = kwargs.get("query")
 		self.fields = kwargs.get("fields")
@@ -63,6 +66,9 @@ class Search():
 		self.status_code = None
 		self.results = None
 
+		if not self.endpoint:
+			self.endpoint = config.get("endpoint")
+
 		self.build_query()
 
 		response = Query(method=self.method, data=self.request_body, url=self.request_url).response
@@ -70,7 +76,7 @@ class Search():
 			self.results = Results(response=response, request=self.request_url)
 
 	def build_query(self):
-		if config.get("endpoint") == "object":
+		if self.endpoint == "object":
 			self.request_url += "/search"
 			self.method = "POST"
 			self.request_body = {}
@@ -92,7 +98,7 @@ class Search():
 			self.request_body = json.dumps(self.request_body)
 
 		else:
-			self.request_url += "/{}?q=".format(config.get("endpoint"))
+			self.request_url += "/{}?q=".format(self.endpoint)
 			self.method = "GET"
 
 			url_parts = []
@@ -132,6 +138,9 @@ class Scroll():
 	def __init__(self, **kwargs):
 		self.scroll_post_url = None
 		self.scroll_get_url = None
+		self.sleep = kwargs.get("sleep")
+
+		self.endpoint = kwargs.get("endpoint")
 
 		self.query = kwargs.get("query")
 		self.fields = kwargs.get("fields")
@@ -147,13 +156,16 @@ class Scroll():
 		if config.get("max_records") != -1:
 			self.record_limit = config.get("max_records")
 
+		if not self.endpoint:
+			self.endpoint = config.get("endpoint")
+
 		self.build_query()
 
 	def build_query(self):
-		if config.get("endpoint") == "object":
+		if self.endpoint == "object":
 			slug = "search"
 		else:
-			slug = config.get("endpoint")
+			slug = self.endpoint
 
 		scroll_base_url = "{b}/{s}/_scroll/?q=".format(b=config.get("base_url"), s=slug)
 
@@ -181,7 +193,6 @@ class Scroll():
 				print("Scroll get url: {}".format(self.scroll_get_url))
 
 	def get_scroll(self):
-		i = 1
 		while self.status_code == 303:
 			if self.record_limit:
 				if len(self.results.records) >= self.record_limit:
@@ -196,7 +207,7 @@ class Scroll():
 			elif response.status_code == 422:
 				print("Duration limit exceeded")
 			self.status_code = response.status_code
-			i += 1
+			time.sleep(self.sleep)
 
 class Results():
 	# Results object for a completed search or scroll
@@ -222,6 +233,7 @@ class Results():
 		if self.status == "200" or "303":
 			response = json.loads(response.text)
 			self.result_count = response["_metadata"]["resultset"]["count"]
+			print("Retrieving {} records".format(self.result_count))
 
 	def add_records(self, response):
 		if self.status == "200" or "303":

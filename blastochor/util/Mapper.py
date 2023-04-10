@@ -10,7 +10,7 @@ class Mapping():
         self.mapping_rules = {}
         self.outputs = []
         self.ordered_fieldnames = {}
-        self.harvest_triggers = []
+        self.reharvest_triggers = []
 
         self.load_map()
 
@@ -59,7 +59,7 @@ class Mapping():
 
             new_trigger = ReharvestTrigger(parent_endpoint=endpoint, harvest_path=harvest_path, harvest_endpoint=harvest_endpoint, label=label)
 
-            self.harvest_triggers.append(new_trigger)
+            self.reharvest_triggers.append(new_trigger)
 
     def load_rule(self, output_label, fieldname):
         file_rules = self.mapping_rules.get(output_label)

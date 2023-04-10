@@ -9,6 +9,9 @@
     - irn:
       - literal:
         - id
+    - possibleDuplicate:
+      - hardcoded:
+        - null
     - type:
       - literal:
         - type

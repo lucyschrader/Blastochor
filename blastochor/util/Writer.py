@@ -2,7 +2,7 @@
 
 import csv
 #from datetime import datetime
-from blastochor.settings.Settings import config
+from blastochor.settings.Settings import config, stats
 
 class OutputCSV():
 	def __init__(self, label):
@@ -38,9 +38,16 @@ class OutputCSV():
 						value = " | ".join(value)
 					else:
 						value = None
+				# If a value is None, turn it into a blank string
 				if value == None:
 					value = ""
+
+				# If removing newlines is turned on, check if value is a string and replace them with spaces
+				if config.get("clean_newlines"):
+					if isinstance(value, str):
+						value = value.replace("\n", " ")
+
 				row.append(value)
 
 			self.writer.writerow(row)
-			
+			stats.file_write_counts[self.label] += 1			

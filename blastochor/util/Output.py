@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from blastochor.settings.Settings import config, stats
+from blastochor.settings.Settings import config, stats, ProgressBar
 import blastochor.util.Processor as processor
 from blastochor.util.Records import records
 from blastochor.util import Writer
@@ -21,6 +21,7 @@ class Output():
             print("{} output object created".format(self.label))
 
     def write_to_csv(self):
+        print("Writing {} file".format(self.label))
         csv = Writer.OutputCSV(self.label)
 
         header_row = [i for i in self.fieldnames]
@@ -55,11 +56,15 @@ class Output():
                     self.chop_up_record(record, pointer)
             else:
                 self.chop_up_record(record)
-                
-            stats.file_write_counts[self.label] += 1
-            
+
+        print("Processing values")
+        progress = ProgressBar(length=len(self.rows))
+        progress_counter = 0
         for output_row in self.rows:
             processor.FieldProcessor(self.rules, output_row)
+
+            progress_counter += 1
+            progress.update(progress_counter)
 
     def chop_up_record(self, record=None, pointer=None):
         kwargs = {}
@@ -127,9 +132,9 @@ class Output():
                         self.rows.append(OutputRow(**kwargs))
             # Runs if there is only one row needed
             else:
-                kwargs["data"] = data
+                kwargs["data"] = data[0]
                 kwargs["group_role"] = None
-                kwargs["explode_ordinal"] = None
+                kwargs["explode_ordinal"] = 0
                 self.rows.append(OutputRow(**kwargs))
         # Runs if the record isn't being exploded
         else:

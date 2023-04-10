@@ -4,7 +4,7 @@
 
 # Setup
 api_key_env: TE-PAPA-KEY
-mapping_file: googleartmap.yaml
+mapping_file: gbifmap.yaml
 corefile: core
 input_dir: input_files
 output_dir: output_files
@@ -12,21 +12,22 @@ use_skiplist: False
 skipfile: null
 min_image_size: 0
 max_list_size: 100
-group_rows: true
-parent_label: sequence
+clean_newlines: true
+group_rows: false
+parent_label: null
 parent_fields:
-  include: false
-  fields: subitemid, orderid, rights, filespec
+  include: null
+  fields: null
 child_fields:
-  include: true
-  fields: itemid, subitemid, orderid, rights, filetype, filespec
+  include: null
+  fields: null
 ungrouped_fields:
-  include: false
-  fields: subitemid, orderid
+  include: null
+  fields: null
 
 # Run
 mode: scroll
-quiet: False
+quiet: True
 base_url: https://data.tepapa.govt.nz/collection
 endpoint: object
 timeout: 5
@@ -36,14 +37,14 @@ attempts: 3
 list_source: null
 
 # Search/scroll mode settings
-max_records: -1
-size: 1000
+max_records: 100
+size: 100
 
 query: "*"
 sort: null
 
 filter:
-  collection: Art
-  allows_download: true
+  collection: Plants
+  allows_download: null
   keyword_fields: null
   keyword_values: null

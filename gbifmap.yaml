@@ -7,13 +7,13 @@
   reduce: null
   extend:
     - 1:
-      endpoint: fieldcollection
-      path: evidenceFor.atEvent.id
-      for_label: event
-    - 2:
       endpoint: object
       path: id
       for_label: identification
+    - 2:
+      endpoint: fieldcollection
+      path: evidenceFor.atEvent.id
+      for_label: null
     - 3:
       endpoint: taxon
       path: identification.i.toTaxon.id
@@ -82,6 +82,16 @@
     - basisOfRecord:
       - literal:
         - basisOfRecord
+    - informationWithheld:
+      - literal:
+        - restrictLocalityData
+      - map_value:
+          true: precise location information not given for threatened species
+    - dataGeneralizations:
+      - literal:
+        - restrictLocalityData
+      - map_value:
+          true: coordinates and precise locality data removed
     - catalogNumber:
       - literal:
         - identifier
@@ -105,93 +115,231 @@
     - lifeStage:
       - literal:
         - lifeStage
+    - occurrenceStatus:
+      - hardcoded:
+        - present
     - associatedMedia:
       - collate_list:
         - hasRepresentation.i.previewUrl
-
-- event:
-  label: event
-  reference_column: OccurrenceID
-  primary_endpoint: fieldcollection
-  explode: null
-  reduce: null
-  extend: null
-  fields:
     - eventID:
       - literal:
-        - pid
+        - evidenceFor.atEvent.pid
     - fieldNumber:
+      - literal:
+        - evidenceFor.atEvent.id
+      - lookup:
+        - fieldcollection
       - literal:
         - fieldNumber
     - eventDate:
       - literal:
-        - eventDate
+        - evidenceFor.atEvent.eventDate
     - verbatimEventDate:
       - literal:
-        - verbatimEventDate
+        - evidenceFor.atEvent.verbatimEventDate
     - habitat:
+      - literal:
+        - evidenceFor.atEvent.id
+      - lookup:
+        - fieldcollection
       - literal:
         - habitat
     - samplingProtocol:
       - literal:
+        - evidenceFor.atEvent.id
+      - lookup:
+        - fieldcollection
+      - literal:
         - samplingProtocol
     - fieldNotes:
+      - literal:
+        - evidenceFor.atEvent.id
+      - lookup:
+        - fieldcollection
       - literal:
         - fieldNotes
     - continent:
       - literal:
-        - atLocation.continent
+        - evidenceFor.atEvent.atLocation.continent
+    - waterBody:
+      - literal:
+        - evidenceFor.atEvent.atLocation.waterBody
+    - islandGroup:
+      - literal:
+        - evidenceFor.atEvent.atLocation.islandGroup
+    - island:
+      - literal:
+        - evidenceFor.atEvent.atLocation.island
     - country:
       - literal:
-        - atLocation.country
+        - evidenceFor.atEvent.atLocation.country
     - countryCode:
       - country_code:
-        - atLocation.country
+        - evidenceFor.atEvent.atLocation.country
     - stateProvince:
       - literal:
-        - atLocation.stateProvince
+        - evidenceFor.atEvent.atLocation.stateProvince
     - locality:
       - literal:
-        - atLocation.locality
+        - evidenceFor.atEvent.atLocation.locality
     - verbatimLocality:
       - literal:
-        - atLocation.verbatimLocality
+        - evidenceFor.atEvent.atLocation.verbatimLocality
     - verbatimElevation:
+      - literal:
+        - evidenceFor.atEvent.id
+      - lookup:
+        - fieldcollection
       - literal:
         - atLocation.verbatimElevation
     - minimumElevationInMeters:
       - literal:
+        - evidenceFor.atEvent.id
+      - lookup:
+        - fieldcollection
+      - literal:
         - atLocation.minimumElevationInMeters
     - maximumElevationInMeters:
+      - literal:
+        - evidenceFor.atEvent.id
+      - lookup:
+        - fieldcollection
       - literal:
         - atLocation.maximumElevationInMeters
     - verbatimDepth:
       - literal:
+        - evidenceFor.atEvent.id
+      - lookup:
+        - fieldcollection
+      - literal:
         - atLocation.verbatimDepth
     - minimumDepthInMeters:
+      - literal:
+        - evidenceFor.atEvent.id
+      - lookup:
+        - fieldcollection
       - literal:
         - atLocation.minimumDepthInMeters
     - maximumDepthInMeters:
       - literal:
+        - evidenceFor.atEvent.id
+      - lookup:
+        - fieldcollection
+      - literal:
         - atLocation.maximumDepthInMeters
     - minimumDistanceAboveSurfaceInMeters:
+      - literal:
+        - evidenceFor.atEvent.id
+      - lookup:
+        - fieldcollection
       - literal:
         - atLocation.minimumDistanceAboveSurfaceInMeters
     - maximumDistanceAboveSurfaceInMeters:
       - literal:
+        - evidenceFor.atEvent.id
+      - lookup:
+        - fieldcollection
+      - literal:
         - atLocation.maximumDistanceAboveSurfaceInMeters
     - decimalLatitude:
+      - literal:
+        - evidenceFor.atEvent.id
+      - lookup:
+        - fieldcollection
       - collate_list:
         - atLocation.mappingDetails.i.decimalLatitude
     - decimalLongitude:
+      - literal:
+        - evidenceFor.atEvent.id
+      - lookup:
+        - fieldcollection
       - collate_list:
         - atLocation.mappingDetails.i.decimalLongitude
     - geodeticDatum:
+      - literal:
+        - evidenceFor.atEvent.id
+      - lookup:
+        - fieldcollection
       - collate_list:
         - atLocation.mappingDetails.i.geodeticDatum
     - georeferenceSources:
       - literal:
+        - evidenceFor.atEvent.id
+      - lookup:
+        - fieldcollection
+      - literal:
         - atLocation.georeferenceSources
+    - identificationID:
+      - format_string:
+        - tepapa:collection/identification/{}/{}
+        - parent_id, explode_ordinal
+    - identificationQualifier:
+      - literal:
+        - identification.i.qualifier
+    - verbatimIdentification:
+      - literal:
+        - identification.i.qualifiedName
+    - typeStatus:
+      - format_string:
+        - "{} of {}"
+        - identification.i.typeStatus, identification.i.qualifiedName
+        - required
+    - identifiedBy:
+      - literal:
+        - identification.i.identifiedBy.title
+    - identifiedByID:
+      - literal:
+        - identification.i.identifiedBy.id
+      - lookup:
+        - agent
+      - conditional:
+        - related.i.contentUrl
+        - related.i.title=ORCID
+    - dateIdentified:
+      - literal:
+        - identification.i.dateIdentified
+    - taxonID:
+      - literal:
+        - identification.i.toTaxon.pid
+    - scientificName:
+      - literal:
+        - identification.i.toTaxon.scientificName
+    - taxonRank:
+      - literal:
+        - identification.i.toTaxon.rank
+    - higherClassification:
+      - literal:
+        - identification.i.toTaxon.higherClassification
+    - kingdom:
+      - literal:
+        - identification.i.toTaxon.kingdom
+    - phylum:
+      - literal:
+        - identification.i.toTaxon.phylum
+    - class:
+      - literal:
+        - identification.i.toTaxon.class
+    - order:
+      - literal:
+        - identification.i.toTaxon.order
+    - family:
+      - literal:
+        - identification.i.toTaxon.family
+    - genus:
+      - literal:
+        - identification.i.toTaxon.genus
+    - vernacularName:
+      - literal:
+        - identification.i
+      - collate_list:
+        - toTaxon.vernacularName.i.title
+    - nomenclaturalCode:
+      - literal:
+        - identification.i.toTaxon.id
+      - lookup:
+        - taxon
+      - literal:
+        - nomenclaturalCode
 
 - identification:
   label: identification

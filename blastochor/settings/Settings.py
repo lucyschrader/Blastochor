@@ -3,6 +3,7 @@
 import os
 import yaml
 from datetime import datetime
+from math import floor
 
 collections = ["Archaeozoology", "Art", "Birds", "CollectedArchives", "Crustacea", "Fish", "FossilVertebrates", "Geology", "History", "Insects", "LandMammals", "MarineInvertebrates", "MarineMammals", "Molluscs", "MuseumArchives", "PacificCultures", "Philatelic", "Photography", "Plants", "RareBooks", "ReptilesAndAmphibians", "TaongaMāori"]
 sciences = ["Archaeozoology", "Birds", "Crustacea", "Fish", "FossilVertebrates", "Geology", "Insects", "LandMammals", "MarineInvertebrates", "MarineMammals", "Molluscs", "Plants", "ReptilesAndAmphibians"]
@@ -142,10 +143,20 @@ class AppStats():
     def end(self):
         end_time = datetime.now()
         delta = end_time - self.start_time
-        self.run_time = delta.total_seconds()
+        run_seconds = delta.total_seconds()
+        if run_seconds > 3600:
+            run_hours = run_seconds // 3600
+            run_minutes = (run_seconds // 60) % 60
+            self.run_time = "{h} hours and {m} minutes".format(h=run_hours, m=run_minutes)
+        elif run_seconds > 60:
+            run_minutes = run_seconds // 60
+            run_seconds = run_seconds - (run_minutes * 60)
+            self.run_time = "{m} minutes and {s} seconds".format(m=run_minutes, s=run_seconds)
+        else:
+            self.run_time = "{} seconds".format(round(run_seconds))
 
     def print_stats(self):
-        print("Script ran in {} seconds".format(self.run_time))
+        print("Script ran in {}".format(self.run_time))
         print("Script made {} API calls".format(self.api_call_count))
 
         if config.get("mode") == "search" or "scroll":
@@ -157,6 +168,28 @@ class AppStats():
 
         for label in self.file_write_counts.keys():
             print("Script wrote {n} records to the {l} file".format(n=self.file_write_counts.get(label), l=label))
+
+class ProgressBar():
+    def __init__(self, length=1):
+        self.length = length
+        self.width = 50
+        print("[", " " * self.width, "]", sep="", end="", flush=True)
+
+    def update(self, count):
+        progress_percentage = floor((count / self.length) * 100)
+
+        if progress_percentage % 2 == 0:
+            left = self.width * progress_percentage // 100
+            right = self.width - left
+
+            tags = "#" * left
+            spaces = " " * right
+            percents = "{:.0f}%".format(progress_percentage)
+
+            print("\r[", tags, spaces, "]", percents, sep="", end="", flush=True)
+
+        if progress_percentage == 100:
+            print("")
 
 config = read_config()
 update_settings()
