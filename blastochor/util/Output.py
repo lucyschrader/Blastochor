@@ -61,7 +61,7 @@ class Output():
         progress = ProgressBar(length=len(self.rows))
         progress_counter = 0
         for output_row in self.rows:
-            processor.FieldProcessor(self.rules, output_row)
+            processor.RowProcessor(self.rules, output_row)
 
             progress_counter += 1
             progress.update(progress_counter)
@@ -72,8 +72,16 @@ class Output():
         kwargs["pointer"] = pointer
         kwargs["rules"] = self.rules
         kwargs["record_pid"] = record.pid
+        kwargs["explode_on"] = self.explode_on
         kwargs["explode_ordinal"] = None
         kwargs["group_role"] = None
+
+        # Removes images not being written out if only some selected
+        if config["mode"] == list:
+            irn_object = next(filter(lambda input_irn: input_irn.irn == record.data.get("id"), config.get("irn_list")), None)
+            if irn_object:
+                if irn_object.harvest_all == False:
+                    record.data = self.remove_nonwriting_images(irn_object, record.data)
 
         # Cuts down the record to a subset if needed
         if self.reduce_on:
@@ -132,16 +140,36 @@ class Output():
                         self.rows.append(OutputRow(**kwargs))
             # Runs if there is only one row needed
             else:
-                kwargs["data"] = data[0]
+                if explode_reduce == True:
+                    kwargs["data"] = data[0]
+                else:
+                    kwargs["data"] = data
                 kwargs["group_role"] = None
                 kwargs["explode_ordinal"] = 0
                 self.rows.append(OutputRow(**kwargs))
+
         # Runs if the record isn't being exploded
         else:
             kwargs["data"] = data
             kwargs["group_role"] = None
             kwargs["explode_ordinal"] = None
             self.rows.append(OutputRow(**kwargs))
+
+    def remove_nonwriting_images(self, irn_object, record_data):
+        # When only writing out specific images, remove any other images from the source data
+        has_rep_section = record_data.get("hasRepresentation")
+        # If all images on the record are to be written out
+        if len(has_rep_section) == len(irn_object.media):
+            pass
+        # If not all images on the record are to be written out
+        else:
+            for img in has_rep_section:
+                if img.get("id") not in irn_object.media:
+                    has_rep_section.pop(img)
+
+            record_data["hasRepresentation"] = has_rep_section
+
+        return record_data
 
 class OutputRow():
     def __init__(self, data=None, pointer=None, explode_on=None, explode_ordinal=None, explode_parent_value=None, group_role=None, explode_child_fields=None, explode_parent_fields=None, rules=None, record_pid=None):

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import csv
 import yaml
 from datetime import datetime
 from math import floor
@@ -50,6 +51,9 @@ def update_settings():
     if not config.get("attempts"):
         config["attempts"] = 3
 
+    if config.get("list_source"):
+        config["list_source"] = "./{d}/{f}".format(d=config.get("input_dir"), f=config.get("list_source"))
+
     if not config.get("query"):
         config["query"] == "*"
 
@@ -93,41 +97,65 @@ def set_filters():
 
 class InputList():
     def __init__(self, source_file):
-        self.source_data = None
-        self.irn_list = []
+        source_data = None
+        irn_list = []
 
-    def build_list(self):
-        if self.source_file.endswith(".csv"):
-            with open(self.source_file, newline="", encoding="utf-8") as f:
-                self.source_data = csv.DictReader(f, delimiter=",")
+        if source_file.endswith(".csv"):
+            with open(source_file, newline="", encoding="utf-8") as f:
+                source_data = csv.DictReader(f, delimiter=",")
 
-            for row in self.source_data:
-                this_irn = row.get("record_irn")
-                if DataExporter.settings.use_skipfile == True:
-                    if DataExporter.skip_check(this_irn) == True:
-                        break
-                self.irn_list.append(this_irn)
+                for row in source_data:
+                    this_irn = row.get("record_irn")
+                    this_media_irn = row.get("media_irn")
+                    if config.get("use_skipfile") == True:
+                        if self.skip_check(this_irn) == True:
+                            break
 
-        elif self.source_file.endswith(".txt"):
-            with open(self.source, "r", encoding="utf-8") as f:
-                self.source_data = f.readlines()
+                    this_irn_object = next(filter(lambda input_irn: input_irn.irn == this_irn, irn_list), None)
+                    if not this_irn_object:
+                        this_irn_object = InputIRN(irn=this_irn)
+                        if this_media_irn:
+                            this_irn_object.media.append(this_media_irn)
+                            this_irn_object.harvest_all = False
+                        irn_list.append(this_irn_object)
+                    else:
+                        if this_media_irn:
+                            this_irn_object.media.append(this_media_irn)
 
-            for row in self.source_data:
-                this_irn = int(row.strip())
-                if self.settings.use_skipfile == True:
-                    if self.skip_check(this_irn) == True:
-                        break
-                self.irn_list.append(this_irn)
+        elif source_file.endswith(".txt"):
+            with open(source_file, "r", encoding="utf-8") as f:
+                source_data = f.readlines()
+
+                for row in source_data:
+                    this_irn = int(row.strip())
+                    if config.get("use_skipfile") == True:
+                        if self.skip_check(this_irn) == True:
+                            break
+                    this_irn_object = InputIRN(irn=irn)
+                    irn_list.append(this_irn_object)
+
+        config["irn_list"] = irn_list
         
     def skip_check(self, irn):
-        if irn in self.skiplist:
+        if irn in config.get("skiplist"):
             return True
         
         return False
 
+class InputIRN():
+    def __init__(self, irn=None):
+        self.irn = irn
+        self.harvest_all = True
+        self.media = []
+
 class AppStats():
     def __init__(self):
         self.start_time = None
+        self.end_harvest_time = None
+        self.end_extrarecords_time = None
+        self.harvest_time = None
+        self.extrarecords_time = None
+        self.processing_time = None
         self.run_time = None
         self.api_call_count = 0
         self.search_result_count = 0
@@ -140,34 +168,60 @@ class AppStats():
     def start(self):
         self.start_time = datetime.now()
 
+    def end_harvest(self):
+        self.end_harvest_time = datetime.now()
+
+    def end_extrarecords(self):
+        self.end_extrarecords_time = datetime.now()
+
     def end(self):
         end_time = datetime.now()
+
+        # Record how long script took to run in total
         delta = end_time - self.start_time
-        run_seconds = delta.total_seconds()
-        if run_seconds > 3600:
-            run_hours = run_seconds // 3600
-            run_minutes = (run_seconds // 60) % 60
-            self.run_time = "{h} hours and {m} minutes".format(h=run_hours, m=run_minutes)
-        elif run_seconds > 60:
-            run_minutes = run_seconds // 60
-            run_seconds = run_seconds - (run_minutes * 60)
-            self.run_time = "{m} minutes and {s} seconds".format(m=run_minutes, s=run_seconds)
+        self.run_time = self.datetime_to_string(delta.total_seconds())
+
+        # Record how long script took to perform initial harvest
+        delta = self.end_harvest_time - self.start_time
+        self.harvest_time = self.datetime_to_string(delta.total_seconds())
+
+        # Record how long script took to perform extra queries
+        delta = self.end_extrarecords_time - self.end_harvest_time
+        self.extrarecords_time = self.datetime_to_string(delta.total_seconds())
+
+        # Record how long script took to perform processing
+        delta = end_time - self.end_extrarecords_time
+        self.processing_time = self.datetime_to_string(delta.total_seconds())
+
+    def datetime_to_string(self, seconds):
+        if seconds > 3600:
+            hours = seconds // 3600
+            minutes = (seconds // 60) % 60
+            return "{h} hours and {m} minutes".format(h=hours, m=minutes)
+        elif seconds > 60:
+            minutes = seconds // 60
+            seconds = seconds - (minutes * 60)
+            return "{m} minutes and {s} seconds".format(m=minutes, s=seconds)
         else:
-            self.run_time = "{} seconds".format(round(run_seconds))
+            return "{} seconds".format(round(seconds))
 
     def print_stats(self):
         print("Script ran in {}".format(self.run_time))
         print("Script made {} API calls".format(self.api_call_count))
 
-        if config.get("mode") == "search" or "scroll":
-            print("Script found {} search results".format(self.search_result_count))
+        if config.get("mode") == "search" or (config.get("mode") == "scroll"):
+            print("Search returned {} results".format(self.search_result_count))
         elif config.get("mode") == "list":
-            print("Script queried {} records from source list".format(self.list_count))
+            print("Source list contained {} records".format(self.list_count))
+        print("Harvesting ran in {}".format(self.harvest_time))
 
-        print("Script queried {} extension records".format(self.extension_records_count))
+        print("Queried {} extension records".format(self.extension_records_count))
+        print("Getting extra records took {}".format(self.extrarecords_time))
+
+        print("Processing records took {}".format(self.processing_time))
 
         for label in self.file_write_counts.keys():
-            print("Script wrote {n} records to the {l} file".format(n=self.file_write_counts.get(label), l=label))
+            print("Wrote {n} records to the {l} file".format(n=self.file_write_counts.get(label), l=label))
 
 class ProgressBar():
     def __init__(self, length=1):

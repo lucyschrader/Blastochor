@@ -73,24 +73,46 @@ class Harvester():
                     records.append(new_record)
                     self.check_for_triggers(new_record)
 
+        stats.end_harvest()
+
         if len(self.reharvest_list) > 0:
             self.run_reharvests()
 
+        stats.end_extrarecords()
+
         print("All records saved")
 
-    def harvest_from_list(self, irn_list=None, endpoint=None):
+    def harvest_from_list(self, endpoint=None):
         # Tell AskCO which records to query
         # Get records into Records object
+        irn_list = config.get("irn_list")
         stats.list_count = len(irn_list)
 
         if endpoint == None:
             endpoint = config.get("endpoint")
 
-        for irn in irn_list:
-            new_record = self.create_single_record(self, endpoint=endpoint, irn=irn)
+        print("Retrieving records from list")
+        progress = ProgressBar(length=len(irn_list))
+        progress_counter = 0
+
+        for irn_object in irn_list:
+            irn = irn_object.irn
+            new_record = self.create_single_record(endpoint=endpoint, irn=irn)
             self.check_for_triggers(new_record)
 
+            progress_counter += 1
+            progress.update(progress_counter)
+
             time.sleep(self.sleep)
+
+        stats.end_harvest()
+
+        if len(self.reharvest_list) > 0:
+            self.run_reharvests()
+
+        stats.end_extrarecords()
+
+        print("All records in list saved")
 
     def create_single_record(self, endpoint=None, irn=None):
         resource = Resource(endpoint=endpoint, irn=irn)

@@ -95,6 +95,10 @@
     - catalogNumber:
       - literal:
         - identifier
+    - recordNumber:
+      - conditional:
+        - previousIdentifier.i.identifier
+        - previousIdentifier.i.notes=Collector's number
     - recordedBy:
       - collate_list:
         - evidenceFor.atEvent.recordedBy.i.title
@@ -118,9 +122,15 @@
     - occurrenceStatus:
       - hardcoded:
         - present
+    - preparations:
+      - literal:
+        - specimenType
     - associatedMedia:
       - collate_list:
         - hasRepresentation.i.previewUrl
+    - otherCatalogNumbers:
+      - collate_list:
+        - previousIdentifier.i.identifier
     - eventID:
       - literal:
         - evidenceFor.atEvent.pid
@@ -269,6 +279,9 @@
         - fieldcollection
       - literal:
         - atLocation.georeferenceSources
+    - measurementRemarks:
+      - collate_list:
+        - observedDimension.i.title
     - identificationID:
       - format_string:
         - tepapa:collection/identification/{}/{}

@@ -56,9 +56,12 @@ def step_to_field(data=None, path=None):
 
 def clean_html(data):
     # Remove unwanted html markup from a value
-    clean = re.compile("<.*?>")
-    value = re.sub(clean, "", data)
-    value.replace("&nbsp;", "")
+    if data:
+        clean = re.compile("<.*?>")
+        value = re.sub(clean, "", data)
+        value.replace("&nbsp;", "")
+    else:
+        value = None
     return value
 
 def collate_list(data, path):
@@ -183,7 +186,10 @@ def format_string(data, **kwargs):
 
     values = []
     for path in inserts:
-        if path == "explode_ordinal":
+        if path.startswith("explode_ordinal"):
+            if "+" in path:
+                modifier = int(path.split("+")[1])
+                explode_ordinal += modifier
             if explode_ordinal is not None or (explode_ordinal == 0):
                 values.append(str(explode_ordinal))
             else:
@@ -307,7 +313,7 @@ def value_truncate(data, params):
     # Optionally provide a truncation indicator at the end, eg "..."
     pass
 
-class FieldProcessor():
+class RowProcessor():
     def __init__(self, rules, output_row):
         self.rules = rules
         self.output_row = output_row
@@ -324,22 +330,22 @@ class FieldProcessor():
             if config.get("group_rows"):
                 if self.output_row.group_role == "child":
                     if self.include_field(key, config.get("child_fields")):
-                        self.run_processing(rule=rule)
+                        self.this_value = ValueProcessor(rule=rule, output_row=self.output_row).this_value
                     else:
                         self.this_value = ""
                 elif self.output_row.group_role == "parent":
                     if self.include_field(key, config.get("parent_fields")):
-                        self.run_processing(rule=rule)
+                        self.this_value = ValueProcessor(rule=rule, output_row=self.output_row).this_value
                     else:
                         self.this_value = ""
                 else:
                     if self.include_field(key, config.get("ungrouped_fields")):
-                        self.run_processing(rule=rule)
+                        self.this_value = ValueProcessor(rule=rule, output_row=self.output_row).this_value
                     else:
                         self.this_value = ""
             # Otherwise just run everything
             else:
-                self.run_processing(rule=rule)
+                self.this_value = ValueProcessor(rule=rule, output_row=self.output_row).this_value
             
             self.output_row.values.update({key: self.this_value})
 
@@ -358,98 +364,130 @@ class FieldProcessor():
             else:
                 return True
 
-    def run_processing(self, rule):
-        data = self.output_row.data
-        for function in rule.mapping_functions:
-            self.unpack_function(function, data)
-            data = self.this_value
+class ValueProcessor():
+    def __init__(self, rule=None, output_row=None):
+        self.rule = rule
+        self.output_row = output_row
+        self.this_value = None
+        self.reprocess = False
 
-    def unpack_function(self, function=None, data=None, value_index=None):
-        f = list(function.keys())[0]
-        params = function.get(f)
+        for function in self.rule.mapping_functions:
+            processed_function = self.unpack_function(function=function)
+            self.this_value = processed_function.output_value
+            self.reprocess = processed_function.reprocess
 
-        if not config.get("quiet"):
-            print("Function: {}".format(f))
-
-        if value_index is not None or (value_index == 0):
-            self.this_value[value_index] = self.select_function(data, f, params)
-        else:
-            self.this_value = self.select_function(data, f, params)
+    def unpack_function(self, function=None):
+        function_name = list(function.keys())[0]
+        params = function.get(function_name)
         
         if not config.get("quiet"):
-            print("Value: {}".format(self.this_value))
+            print("Running function: {}".format(function_name))
 
-    def select_function(self, data, f, params):
-        match f:
+        return FunctionProcessor(function=function_name, params=params, input_value=self.this_value, output_row=self.output_row, reprocess=self.reprocess)
+
+class FunctionProcessor():
+    def __init__(self, function=None, params=None, input_value=None, output_row=None, reprocess=False, value_index=None):
+        self.function = function
+        self.params = params
+        self.output_row = output_row
+        self.data = self.output_row.data
+
+        if reprocess == False:
+            self.input_value = self.data
+        else:
+            self.input_value = input_value
+
+        self.output_value = None
+        self.reprocess = True
+
+        self.value_index = value_index
+
+        self.select_function()
+
+    def select_function(self):
+        match self.function:
+
             case "for_each":
-                if isinstance(data, list):
-                    for sub_f in params:
-                        value_index = 0
-                        for value in data:
-                            self.unpack_function(sub_f, value, value_index)
-                            value_index += 1
-                return self.this_value
+                if isinstance(self.input_value, list):
+                    self.output_value = []
+                    value_index = 0
+                    for value in self.input_value:
+                        sub_f_reprocess = True
+                        for sub_f in self.params:
+                            processed_sub_f = self.unpack_function(function=sub_f, input_value=value, output_row=self.output_row, reprocess=sub_f_reprocess, value_index=value_index)
+                            value = processed_sub_f.output_value
+                            sub_f_reprocess = processed_sub_f.reprocess
+
+                        self.output_value.append(value)
+                        value_index += 1
+
+                        #print("Post-subfunction value: {}".format(self.output_value))
 
             case "fallback":
-                if data == None:
-                    data = self.output_row.data
-                    for sub_f in params:
-                        self.unpack_function(sub_f, data)
-                return self.this_value
+                if self.input_value is not None or (self.input_value == 0):
+                    self.output_value = self.input_value
+                else:
+                    sub_f_reprocess = False
+                    for sub_f in self.params:
+                        processed_sub_f = self.unpack_function(function=sub_f, input_value=None, output_row=self.output_row, reprocess=sub_f_reprocess, value_index=self.value_index)
+                        self.output_value = processed_sub_f.output_value
+                        sub_f_reprocess = processed_sub_f.reprocess
+
+                #print("Post-fallback value: {}".format(self.output_value))
 
             case "clean_html":
-                return clean_html(data)
+                self.output_value = clean_html(self.input_value)
 
             case "collate_list":
-                values = []
-                if "," in params:
-                    p = params[0].split[", "]
+                if "," in self.params:
+                    self.output_value = []
+                    p = self.params[0].split[", "]
                     paths = [path.split(".") for path in p]
                     for path in paths:
-                        values.extend(collate_list(data, path=path))
+                        self.output_value.extend(collate_list(self.input_value, path=path))
                 else:
-                    path = params[0].split(".")
-                    values = collate_list(data, path=path)
-                return values
+                    path = self.params[0].split(".")
+                    self.output_value = collate_list(self.input_value, path=path)
             
             case "concatenate":
-                return concatenate_list(data)
+                self.output_value = concatenate_list(self.input_value)
 
             case "conditional":
-                value_path = params[0].split(".")
-                check_param = params[1].split("=")
+                value_path = self.params[0].split(".")
+                check_param = self.params[1].split("=")
                 check_path = check_param[0].split(".")
                 check_value = check_param[1]
-                return conditional_inclusion(data, value_path=value_path, check_path=check_path, check_value=check_value)
+                self.output_value = conditional_inclusion(self.input_value, value_path=value_path, check_path=check_path, check_value=check_value)
 
             case "country_code":
-                path = params[0].split(".")
-                return country_code(data, path)
+                path = self.params[0].split(".")
+                self.output_value = country_code(self.input_value, path)
 
             case "create_filename":
-                suffix = params[0]
-                return create_filename(data, suffix)
+                suffix = self.params[0]
+                self.output_value = create_filename(self.input_value, suffix)
 
             case "first_match":
-                paths = params[0].split(", ")
-                return first_match(data, paths)
+                paths = self.params[0].split(", ")
+                self.output_value = first_match(self.input_value, paths)
             
             case "format_string":
-                string = params[0]
-                inserts = params[1]
+                string = self.params[0]
+                inserts = self.params[1]
                 required = False
                 try:
-                    if params[2] == "required":
+                    if self.params[2] == "required":
                             required = True
                 except IndexError:
                     pass
                 inserts = inserts.split(", ")
-                return format_string(data, string=string, inserts=inserts, required=required, explode_ordinal=self.output_row.explode_ordinal, record_pid=self.output_row.record_pid)
+
+                self.output_value = format_string(self.input_value, string=string, inserts=inserts, required=required, explode_ordinal=self.output_row.explode_ordinal, record_pid=self.output_row.record_pid)
 
             case "hardcoded":
-                value = params[0]
+                value = self.params[0]
                 if "explode_ordinal" in value:
-                    modifer = None
+                    modifier = None
                     if "+" in value:
                         modifier = int(value.split("+")[1])
                     if self.output_row.explode_ordinal:
@@ -458,59 +496,67 @@ class FieldProcessor():
                         value = 0
                     if modifier:
                         value += modifier
-                return hardcode_value(value)
+                self.output_value = hardcode_value(value)
 
             case "literal":
-                path = params[0].split(".")
+                path = self.params[0].split(".")
                 if self.output_row.explode_on in path:
                     ordinal = self.output_row.explode_ordinal
+                elif self.value_index is not None or (self.value_index == 0):
+                    ordinal = self.value_index
                 else:
                     try:
-                        ordinal = params[1]
-                    except:
+                        ordinal = self.params[1]
+                    except IndexError:
                         ordinal = None
-                return literal(data, path=path, ordinal=ordinal)
+                self.output_value = literal(self.input_value, path=path, ordinal=ordinal)
 
             case "lookup":
-                endpoint = params[0]
-                irn = data
+                endpoint = self.params[0]
 
-                if irn:
-                    record = records.find_record(endpoint=endpoint, irn=int(irn))
+                if self.input_value:
+                    record = records.find_record(endpoint=endpoint, irn=int(self.input_value))
                     if record:
-                        return record.data
-
-                return None
+                        self.output_value = record.data
 
             case "map_value":
-                return map_from_value(data, params)
+                self.output_value = map_from_value(self.input_value, self.params)
 
             case "measurement_conversion":
-                return measurement_conversion(data, params)
+                self.output_value = measurement_conversion(self.input_value, self.params)
 
             case "must_match":
-                authorities = [str(term).lower() for term in params[0].split(", ")]
-                return must_match(data, authorities)
+                authorities = [str(term).lower() for term in self.params[0].split(", ")]
+                self.output_value = must_match(self.input_value, authorities)
 
             case "set_priority":
-                return process_quality_score(data)
+                self.output_value = process_quality_score(self.input_value)
 
             case "related":
-                size = params[0]
-                types = params[1]
-                return related(data, size=size, types=types)
+                size = self.params[0]
+                types = self.params[1]
+                self.output_value = related(self.input_value, size=size, types=types)
 
             case "use_config":
                 # Special cases where part of the output file's metadata need to be called
                 key = params[0]
-                return use_config(key)
+                self.output_value = use_config(key)
 
             case "use_group_labels":
                 label = None
                 if self.output_row.group_role == "parent":
-                    label = params[0]
+                    label = self.params[0]
                 elif self.output_row.group_role == "child":
-                    label = params[1]
+                    label = self.params[1]
                 elif not self.output_row.group_role:
-                    label = params[2]
-                return label
+                    label = self.params[2]
+                self.output_value = label
+
+    def unpack_function(self, function=None, input_value=None, output_row=None, reprocess=False, value_index=None):
+        function_name = list(function.keys())[0]
+        params = function.get(function_name)
+    
+        if not config.get("quiet"):
+            print("Running function: {}".format(function_name))
+
+        return FunctionProcessor(function=function_name, params=params, input_value=input_value, output_row=output_row, reprocess=reprocess, value_index=value_index)

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from blastochor.settings.Settings import config, stats
+from blastochor.settings.Settings import config, stats, InputList
 from blastochor.util import Mapper, Harvester, Records
 
 # TODO: Add a function that tracks how long it takes to run
@@ -14,8 +14,8 @@ if __name__ == '__main__':
     harvester = Harvester.harvester
     mode = config.get("mode")
     if mode == "list":
-        input_list = Settings.InputList(settings.list.source)
-        harvester.harvest_from_list(input_list.irn_list)
+        InputList(config.get("list_source"))
+        harvester.harvest_from_list()
     else:
         harvester.complete_harvest(mode)
 

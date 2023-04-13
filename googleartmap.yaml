@@ -19,7 +19,8 @@
         - "{}.{}"
         - pid, hasRepresentation.i.id
     - orderid:
-      - hardcoded:
+      - format_string:
+        - "{}"
         - explode_ordinal+1
     - customtext:registrationid:
       - literal:
@@ -34,11 +35,11 @@
         - null
     - creator:
       - collate_list:
-        - production.i.contributor.title
+        - production.i
       - for_each:
         - format_string:
           - "{} ({})"
-          - production.i.contributor.title, production.i.role
+          - contributor.title, role
           - required
         - fallback:
           - literal:
@@ -104,7 +105,7 @@
         - evidenceFor.atEvent.eventDate
     - customtext:creator.collector:
       - collate_list:
-        - evendienceFor.atEvent.recordedBy.i.title
+        - evidenceFor.atEvent.recordedBy.i.title
     - customtext:locationCollected:
       - literal:
         - evidenceFor.atEvent.atLocation.title
