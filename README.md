@@ -165,9 +165,10 @@ Sets the value to the string provided. Set the parameter to `explode_ordinal` if
 
 `collate_list`
 
-Gets all values of a field within a list. Automatically concatenated with " | " before writing out. Maximum length of list is controlled in `Config.yml`.
+Gets all values of a field within a list, or multiple lists. Automatically concatenated with " | " before writing out. Maximum length of list is controlled in `Config.yml`.
 - parameters: path to field
 - example: `hasRepresentation.i.rights.title`
+- example: `depicts.i.title, influencedBy.i.title`
 
 `clean_html`
 
@@ -211,6 +212,12 @@ Use to substitute another value if the original request returns None. Next anoth
 ```
 
 This returns a formatted string if both a contributor's title and their role are present. Because `format_string` uses the required parameter, if there's no `role` the function will return None, and then just the title will be returned as a literal value.
+
+`first_match`
+
+Try multiple paths in order and return the value of the first available one. Useful when trying to return the most precise available location.
+- parameters: list of paths, separated by `, `
+- example: `evidenceFor.atEvent.atLocation.locality, evidenceFor.atEvent.atLocation.stateProvince, evidenceFor.atEvent.atLocation.country`
 
 `for_each`
 
@@ -259,14 +266,9 @@ Use after another function that returns a value - can be a single value or a lis
 
 `must_match`
 
-Not currently working! After pulling out a value or list of values, check each term against an authority list and only keep the ones you want.
-- parameters: list of authority terms, separated with `, `. Make sure they're all lowercase
+Use after another function that returns a value or list of values. Checks each term against an authority list and only keeps the ones you want. Not case-sensitive.
+- parameters: list of authority terms, separated with `, `
 - example: `canvas, paper, plaster, cardboard, ceramic, wood, clay`
-
-`prioritise`
-
-Try multiple paths in order and return the value of the first available one. Useful when trying to return the most precise available location.
-- parameters: list of paths, separated by `, `
 
 `related`
 

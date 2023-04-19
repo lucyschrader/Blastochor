@@ -30,7 +30,7 @@ class Harvester():
         size = config.get("size")
 
         if mode == "search":
-            count_call = Search(query=query, sort=sort, filters=filters, start=start, size=1)
+            count_call = Search(endpoint=endpoint, query=query, sort=sort, filters=filters, start=start, size=1)
             stats.search_result_count = count_call.results.result_count
             if not config.get("quiet"):
                 print("Search record count: {}".format(stats.search_result_count))

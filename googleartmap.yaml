@@ -28,6 +28,9 @@
     - title:
       - literal:
         - title
+      - truncate:
+        - 100
+        - ...
     - description:
       - literal:
         - description
@@ -81,7 +84,7 @@
         - depicts.i.title, influencedBy.i.title
     - art=support:
       - collate_list:
-        - isMadeOf
+        - isMadeOf.i.title
       - must_match:
         - canvas, paper, plaster, cardboard, ceramic, wood, clay
     - art=depictedLocation:
@@ -95,8 +98,23 @@
     - art=genre:
       - collate_list:
         - depicts.i.title
-      - must_match:
-        - landscape, portait, still life
+      - map_value:
+          Landscapes (Representations): landscape
+          Landscape paintings: landscape
+          Landscape prints: landscape
+          Landscape photographs: landscape
+          Portraits: portrait
+          Self-portraits: portrait
+          Portrait photographs: portrait
+          Portrait drawings: portrait
+          Portrait paintings: portrait
+          Portrait prints: portrait
+          Still lifes: still life
+          still lifes: still life
+          Still life paintings: still life
+          Still life drawings: still life
+          Still life prints: still life
+          Still life photographs: still life
     - customtext:specimenType:
       - literal:
         - specimenType
@@ -134,8 +152,8 @@
         - image
     - filespec:
       - format_string:
-        - Te Papa {} {} {}
-        - id, hasRepresentation.i.id, title
+        - Te Papa {} {}
+        - id, hasRepresentation.i.id
       - create_filename:
         - jpg
     - relation:url:

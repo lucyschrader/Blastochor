@@ -11,18 +11,22 @@
       path: id
       for_label: identification
     - 2:
+      endpoint: object
+      path: id
+      for_label: multimedia
+    - 3:
       endpoint: fieldcollection
       path: evidenceFor.atEvent.id
       for_label: null
-    - 3:
+    - 4:
       endpoint: taxon
       path: identification.i.toTaxon.id
       for_label: null
-    - 4:
+    - 5:
       endpoint: agent
       path: evidenceFor.atEvent.recordedBy.i.id
       for_label: null
-    - 5:
+    - 6:
       endpoint: agent
       path: identification.i.identifiedBy.id
       for_label: null
@@ -125,9 +129,6 @@
     - preparations:
       - literal:
         - specimenType
-    - associatedMedia:
-      - collate_list:
-        - hasRepresentation.i.previewUrl
     - otherCatalogNumbers:
       - collate_list:
         - previousIdentifier.i.identifier
@@ -431,3 +432,39 @@
         - taxon
       - literal:
         - nomenclaturalCode
+
+- multimedia:
+  label: multimedia
+  reference_column: OccurrenceID
+  primary_endpoint: object
+  explode: hasRepresentation
+  reduce: null
+  extend: null
+  fields:
+    - type:
+      - literal:
+        - hasRepresentation.i.additionalType
+      - must_match:
+        - StillImage, Sound, MovingImage
+    - format:
+      - hardcoded:
+        - image/jpeg
+    - identifier:
+      - literal:
+        - hasRepresentation.i.thumbnailUrl
+    - references:
+      - format_string:
+        - https://collections.tepapa.govt.nz/object/{}
+        - id
+    - title:
+      - literal:
+        - title
+    - publisher:
+      - hardcoded:
+        - Museum of New Zealand Te Papa Tongarewa
+    - license:
+      - literal:
+        - hasRepresentation.i.rights.title
+    - rightsHolder:
+      - hardcoded:
+        - Museum of New Zealand Te Papa Tongarewa

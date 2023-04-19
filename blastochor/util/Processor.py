@@ -6,6 +6,7 @@ import json
 from math import floor
 import random
 import re
+import htmllaundry
 
 from blastochor.settings.Settings import config, stats
 from blastochor.util.Records import records
@@ -55,13 +56,10 @@ def step_to_field(data=None, path=None):
             return None
 
 def clean_html(data):
-    # Remove unwanted html markup from a value
     if data:
-        clean = re.compile("<.*?>")
-        value = re.sub(clean, "", data)
-        value.replace("&nbsp;", "")
-    else:
-        value = None
+        value = htmllaundry.sanitize(data)
+    else: value = None
+
     return value
 
 def collate_list(data, path):
@@ -241,7 +239,6 @@ def map_from_value(data, params):
 def measurement_conversion(data, params):
     pass
 
-# TODO: Fix, currently not working
 def must_match(data, authorities):
     # Include value if it also appears in a provided list of terms
     matching = None
@@ -304,13 +301,28 @@ def related(data, size, types):
 def use_config(key):
     return config.get(key)
 
+def truncate_value(data, string_length, suffix):
+    # Truncate a value to a specified length, with an optional suffix (eg "...")
+    if isinstance(data, str):
+        if len(data) > string_length:
+            if suffix:
+                suffix_length = len(suffix)
+                string_length = string_length - suffix_length
+                value = data[:string_length]
+                value += suffix
+            else:
+                value = data[:string_length]
+
+            return value
+        
+        else:
+            return data
+
+    else:
+        return None
+
 def value_extend(data, params):
     # Extend a value to a specified length using a provided string
-    pass
-    
-def value_truncate(data, params):
-    # Truncate a value to a specified length
-    # Optionally provide a truncation indicator at the end, eg "..."
     pass
 
 class RowProcessor():
@@ -439,12 +451,14 @@ class FunctionProcessor():
                 self.output_value = clean_html(self.input_value)
 
             case "collate_list":
-                if "," in self.params:
+                if "," in self.params[0]:
                     self.output_value = []
-                    p = self.params[0].split[", "]
+                    p = self.params[0].split(", ")
                     paths = [path.split(".") for path in p]
                     for path in paths:
-                        self.output_value.extend(collate_list(self.input_value, path=path))
+                        path_list = collate_list(self.input_value, path=path)
+                        if path_list:
+                            self.output_value.extend(path_list)
                 else:
                     path = self.params[0].split(".")
                     self.output_value = collate_list(self.input_value, path=path)
@@ -536,6 +550,15 @@ class FunctionProcessor():
                 size = self.params[0]
                 types = self.params[1]
                 self.output_value = related(self.input_value, size=size, types=types)
+
+            case "truncate":
+                string_length = self.params[0]
+                try:
+                    suffix = self.params[1]
+                except IndexError:
+                    suffix = None
+
+                self.output_value = truncate_value(self.input_value, string_length=string_length, suffix=suffix)
 
             case "use_config":
                 # Special cases where part of the output file's metadata need to be called
