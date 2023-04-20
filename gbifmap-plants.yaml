@@ -54,7 +54,7 @@
         - Museum of New Zealand Te Papa Tongarewa
     - accessRights:
       - hardcoded:
-        - /!URL TO BE CREATED/!
+        - https://data.tepapa.govt.nz/docs/
     - bibliographicCitation:
       - literal:
         - captionFormatted

@@ -11,7 +11,7 @@ sciences = ["Archaeozoology", "Birds", "Crustacea", "Fish", "FossilVertebrates",
 humanities = ["Art", "CollectedArchives", "History", "MuseumArchives", "PacificCultures", "Philatelic", "Photography", "RareBooks", "TaongaMāori"]
 
 def read_config():
-    config_path = "./_work_googleartconfig.yml"
+    config_path = "./Config.yml"
     with open(config_path, "r") as f:
         print("Reading config file...")
         return yaml.safe_load(f)

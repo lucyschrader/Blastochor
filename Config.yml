@@ -4,7 +4,7 @@
 
 # Setup
 api_key_env: TE-PAPA-KEY
-mapping_file: gbifmap.yaml
+mapping_file: gbifmap-plants.yaml
 corefile: core
 input_dir: input_files
 output_dir: output_files
