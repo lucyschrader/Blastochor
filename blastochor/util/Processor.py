@@ -107,7 +107,7 @@ def concatenate_list(data):
     else:
         return data
 
-def conditional_inclusion(data, value_path, check_path, check_value):
+def conditional_inclusion(data, value_path, check_path, check_values):
     # Return a value if another field matches a specified value
     # Both paths must be in the same section of the record
     # For example, find related.i.contentUrl if related.i.title == "ORCID"
@@ -116,19 +116,25 @@ def conditional_inclusion(data, value_path, check_path, check_value):
         if not check_list:
             return None
         else:
-            if check_value in check_list:
-                ordinal = check_list.index(check_value)
-                return literal(data, path=value_path, ordinal=ordinal)
-            else:
-                return None
+            conditional_values = []
+            for check_value in check_values:
+                if check_value in check_list:
+                    ordinal = check_list.index(check_value)
+                    conditional_values.append(literal(data, path=value_path, ordinal=ordinal))
+
+            return conditional_values
 
     else:
         check = literal(data, path=check_path)
         if not check:
             return None
         else:
-            if check == check_value:
-                return literal(data, path=value_path)
+            conditional_values = []
+            for check_value in check_values:
+                if check == check_value:
+                    conditional_values.append(literal(data, path=value_path))
+
+            return conditional_values
 
     return None
 
@@ -332,7 +338,21 @@ class RowProcessor():
 
         self.this_value = None
 
-        self.populate_values()
+        if output_row.requires:
+            self.check_requirements(output_row)
+
+        if output_row.meets_requirement == False:
+            pass
+        else:
+            self.populate_values()
+
+    def check_requirements(self, output_row):
+        for requirement in output_row.requires.keys():
+            requirement_value = output_row.requires[requirement]
+            requirement_path = requirement.split(".")
+            row_value = literal(data=output_row.data, path=requirement_path, ordinal=output_row.explode_ordinal)
+            if row_value != requirement_value:
+                output_row.meets_requirement = False
 
     def populate_values(self):
         for rule in self.rules:
@@ -470,8 +490,8 @@ class FunctionProcessor():
                 value_path = self.params[0].split(".")
                 check_param = self.params[1].split("=")
                 check_path = check_param[0].split(".")
-                check_value = check_param[1]
-                self.output_value = conditional_inclusion(self.input_value, value_path=value_path, check_path=check_path, check_value=check_value)
+                check_values = check_param[1].split("|")
+                self.output_value = conditional_inclusion(self.input_value, value_path=value_path, check_path=check_path, check_values=check_values)
 
             case "country_code":
                 path = self.params[0].split(".")

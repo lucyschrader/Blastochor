@@ -30,6 +30,7 @@ class Mapping():
             endpoint = output_map.get("primary_endpoint")
             explode_on = output_map.get("explode")
             reduce_on = output_map.get("reduce")
+            requires = output_map.get("requires")
             output_rules = output_map.get("fields")
 
             fieldnames = []            
@@ -43,7 +44,7 @@ class Mapping():
                 fieldnames.append(output_fieldname)
                 rules.append(new_rule)
 
-            output = Output(label=label, endpoint=endpoint, reference_column=reference_column, explode_on=explode_on, reduce_on=reduce_on, fieldnames=fieldnames, rules=rules)
+            output = Output(label=label, endpoint=endpoint, reference_column=reference_column, explode_on=explode_on, reduce_on=reduce_on, requires=requires, fieldnames=fieldnames, rules=rules)
 
             self.outputs.append(output)
             stats.file_write_counts.update({label: 0})

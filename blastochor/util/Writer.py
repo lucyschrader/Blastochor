@@ -24,30 +24,36 @@ class OutputCSV():
 
 	def write_records(self, output_records, fieldnames):
 		for record in output_records:
-			row = []
-			if record.pointer:
-				row.append(record.pointer)
-			for field in fieldnames:
-				value = record.values.get(field)
-				# If a value is still a list after processing, turn it into a string
-				if isinstance(value, list):
-					value = [str(i) for i in value if i is not None]
-					if len(value) == 1:
-						value = value[0]
-					elif len(value) > 1:
-						value = " | ".join(value)
-					else:
-						value = None
-				# If a value is None, turn it into a blank string
-				if value == None:
-					value = ""
+			if record.meets_requirement == False:
+				pass
+			else:
+				self.write_this_record(record, fieldnames)
 
-				# If removing newlines is turned on, check if value is a string and replace them with spaces
-				if config.get("clean_newlines"):
-					if isinstance(value, str):
-						value = value.replace("\n", " ")
+	def write_this_record(self, record, fieldnames):
+		row = []
+		if record.pointer:
+			row.append(record.pointer)
+		for field in fieldnames:
+			value = record.values.get(field)
+			# If a value is still a list after processing, turn it into a string
+			if isinstance(value, list):
+				value = [str(i) for i in value if i is not None]
+				if len(value) == 1:
+					value = value[0]
+				elif len(value) > 1:
+					value = " | ".join(value)
+				else:
+					value = None
+			# If a value is None, turn it into a blank string
+			if value == None:
+				value = ""
 
-				row.append(value)
+			# If removing newlines is turned on, check if value is a string and replace them with spaces
+			if config.get("clean_newlines"):
+				if isinstance(value, str):
+					value = value.replace("\n", " ")
 
-			self.writer.writerow(row)
-			stats.file_write_counts[self.label] += 1			
+			row.append(value)
+
+		self.writer.writerow(row)
+		stats.file_write_counts[self.label] += 1			

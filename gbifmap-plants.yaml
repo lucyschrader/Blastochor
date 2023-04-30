@@ -102,7 +102,7 @@
     - recordNumber:
       - conditional:
         - previousIdentifier.i.identifier
-        - previousIdentifier.i.notes=Collector's number
+        - previousIdentifier.i.notes=Collector's number|Collector number|Collector(s) number|collector number
     - recordedBy:
       - collate_list:
         - evidenceFor.atEvent.recordedBy.i.title
@@ -130,8 +130,9 @@
       - literal:
         - specimenType
     - otherCatalogNumbers:
-      - collate_list:
+      - conditional:
         - previousIdentifier.i.identifier
+        - previousIdentifier.i.notes=Other institutions number
     - eventID:
       - literal:
         - evidenceFor.atEvent.pid
@@ -440,6 +441,8 @@
   explode: hasRepresentation
   reduce: null
   extend: null
+  requires:
+    hasRepresentation.i.rights.allowsDownload: true
   fields:
     - type:
       - literal:

@@ -6,12 +6,13 @@ from blastochor.util.Records import records
 from blastochor.util import Writer
 
 class Output():
-    def __init__(self, label=None, endpoint=None, reference_column=None, explode_on=None, reduce_on=None, fieldnames=None, rules=None):
+    def __init__(self, label=None, endpoint=None, reference_column=None, explode_on=None, reduce_on=None, requires=None, fieldnames=None, rules=None):
         self.label = label
         self.endpoint = endpoint
         self.reference_column = reference_column
         self.explode_on = explode_on
         self.reduce_on = reduce_on
+        self.requires = requires
         self.fieldnames = fieldnames
         self.rules = rules
 
@@ -74,6 +75,7 @@ class Output():
         kwargs["record_pid"] = record.pid
         kwargs["explode_on"] = self.explode_on
         kwargs["explode_ordinal"] = None
+        kwargs["requires"] = self.requires
         kwargs["group_role"] = None
 
         # Removes images not being written out if only some selected
@@ -95,65 +97,72 @@ class Output():
         if self.reduce_on == self.explode_on:
             explode_reduce = True
 
-        # Runs if the record should be checked for multiple rows
-        if self.explode_on:
-            # Works out how many rows should be written
-            if explode_reduce == False:
-                explode_data = processor.step_to_field(data, self.explode_on)
-                if explode_data:
-                    explode_size = len(explode_data)
-                else:
-                    return None
-            else:
-                explode_size = len(data)
+        # Checks if the record (or reduced record) includes any data
+        if data:
 
-            # Runs if there are multiple rows to write out
-            if explode_size > 1:
-                # Runs if multiple rows should be grouped with a parent row
-                if config.get("group_rows"):
+            # Runs if the record should be checked for multiple rows
+            if self.explode_on:
+                # Works out how many rows should be written
+                if explode_reduce == False:
+                    explode_data = processor.step_to_field(data, self.explode_on)
+                    if explode_data:
+                        explode_size = len(explode_data)
+                    else:
+                        return None
+                else:
+                    explode_size = len(data)
+
+                # Runs if there are multiple rows to write out
+                if explode_size > 1:
+                    # Runs if multiple rows should be grouped with a parent row
+                    if config.get("group_rows"):
+                        if explode_reduce == True:
+                            kwargs["data"] = data[0]
+                        else:
+                            kwargs["data"] = data
+                        kwargs["group_role"] = "parent"
+                        kwargs["explode_ordinal"] = 0
+                        # Writes parent row
+                        self.rows.append(OutputRow(**kwargs))
+                        for i in range(0, explode_size):
+                            if explode_reduce == True:
+                                kwargs["data"] = data[i]
+                            else:
+                                kwargs["data"] = data
+                            kwargs["group_role"] = "child"
+                            kwargs["explode_ordinal"] = i
+                            # Writes each child row
+                            self.rows.append(OutputRow(**kwargs))
+                    # Runs if multiple rows don't need to be grouped
+                    else:
+                        for i in range(0, explode_size):
+                            if explode_reduce == True:
+                                kwargs["data"] = data[i]
+                            else:
+                                kwargs["data"] = data
+                            kwargs["group_role"] = None
+                            kwargs["explode_ordinal"] = i
+                            self.rows.append(OutputRow(**kwargs))
+                # Runs if there is only one row needed
+                else:
                     if explode_reduce == True:
                         kwargs["data"] = data[0]
                     else:
                         kwargs["data"] = data
-                    kwargs["group_role"] = "parent"
+                    kwargs["group_role"] = None
                     kwargs["explode_ordinal"] = 0
-                    # Writes parent row
                     self.rows.append(OutputRow(**kwargs))
-                    for i in range(0, explode_size):
-                        if explode_reduce == True:
-                            kwargs["data"] = data[i]
-                        else:
-                            kwargs["data"] = data
-                        kwargs["group_role"] = "child"
-                        kwargs["explode_ordinal"] = i
-                        # Writes each child row
-                        self.rows.append(OutputRow(**kwargs))
-                # Runs if multiple rows don't need to be grouped
-                else:
-                    for i in range(0, explode_size):
-                        if explode_reduce == True:
-                            kwargs["data"] = data[i]
-                        else:
-                            kwargs["data"] = data
-                        kwargs["group_role"] = None
-                        kwargs["explode_ordinal"] = i
-                        self.rows.append(OutputRow(**kwargs))
-            # Runs if there is only one row needed
+
+            # Runs if the record isn't being exploded
             else:
-                if explode_reduce == True:
-                    kwargs["data"] = data[0]
-                else:
-                    kwargs["data"] = data
+                kwargs["data"] = data
                 kwargs["group_role"] = None
-                kwargs["explode_ordinal"] = 0
+                kwargs["explode_ordinal"] = None
                 self.rows.append(OutputRow(**kwargs))
 
-        # Runs if the record isn't being exploded
         else:
-            kwargs["data"] = data
-            kwargs["group_role"] = None
-            kwargs["explode_ordinal"] = None
-            self.rows.append(OutputRow(**kwargs))
+            if not config.get("quiet"):
+                print("Record {p} has no data for {l} output".format(p=record.pid, l=self.label))
 
     def remove_nonwriting_images(self, irn_object, record_data):
         # When only writing out specific images, remove any other images from the source data
@@ -172,7 +181,7 @@ class Output():
         return record_data
 
 class OutputRow():
-    def __init__(self, data=None, pointer=None, explode_on=None, explode_ordinal=None, explode_parent_value=None, group_role=None, explode_child_fields=None, explode_parent_fields=None, rules=None, record_pid=None):
+    def __init__(self, data=None, pointer=None, explode_on=None, explode_ordinal=None, explode_parent_value=None, group_role=None, explode_child_fields=None, explode_parent_fields=None, requires=None, rules=None, record_pid=None):
         self.data = data
         self.pointer = pointer
         self.explode_on = explode_on
@@ -181,7 +190,10 @@ class OutputRow():
         self.group_role = group_role
         self.explode_child_fields = explode_child_fields
         self.explode_parent_fields = explode_parent_fields
+        self.requires = requires
         self.rules = rules
         self.record_pid = record_pid
+
+        self.meets_requirement = None
 
         self.values = {}

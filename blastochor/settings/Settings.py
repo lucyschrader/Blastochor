@@ -12,7 +12,7 @@ humanities = ["Art", "CollectedArchives", "History", "MuseumArchives", "PacificC
 
 def read_config():
     config_path = "./Config.yml"
-    with open(config_path, "r") as f:
+    with open(config_path, "r", encoding="utf-8") as f:
         print("Reading config file...")
         return yaml.safe_load(f)
 

@@ -3,9 +3,6 @@
 from blastochor.settings.Settings import config, stats, InputList
 from blastochor.util import Mapper, Harvester, Records
 
-# TODO: Add a function that tracks how long it takes to run
-# And probably a progress bar tbh
-
 if __name__ == '__main__':
     print("blastochor blasting")
 

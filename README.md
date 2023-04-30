@@ -108,6 +108,13 @@ Each output file is a list item containing a dictionary of options.
 
 `reduce` cuts down the record's data to just the specified section, for example the list of images under `hasRepresentation`. This makes it easier to then navigate to subfields. The script expects the reduced data to be a list.
 
+`requires` checks each record, only letting the record be written if the specified field matches a specified value. If exploding the record, the check will run for each row. If reducing the record, make sure the specified field path takes account of that. For example:
+```
+reduce: hasRepresentation
+requires:
+  rights.allowsDownload: true
+```
+
 ### Extend
 `extend` contains a list of triggers, identifying certain fields that contain IRNs that should also be harvested. For example:
 ```
