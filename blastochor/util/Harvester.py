@@ -22,6 +22,8 @@ class Harvester():
 
     def complete_harvest(self, mode):
         # Gather search/scroll parameters and turn returned records into ApiRecord objects
+        # TODO: Fail gracefully if search returns no results
+        # Consider running fallback searches, eg changing endpoint to object
         endpoint = config.get("endpoint")
         query = config.get("query")
         sort = config.get("sort")
@@ -57,7 +59,8 @@ class Harvester():
                                 print("Duplicate record: {}".format(record.get("pid")))
 
                 start += size
-                time.sleep(self.sleep)
+                if config.get("rate_limited"):
+                    time.sleep(self.sleep)
 
         elif mode == "scroll":
             scroll = Scroll(query=query, sort=sort, size=size, filters=filters, duration=1, sleep=self.sleep)
@@ -103,7 +106,8 @@ class Harvester():
             progress_counter += 1
             progress.update(progress_counter)
 
-            time.sleep(self.sleep)
+            if config.get("rate_limited"):
+                time.sleep(self.sleep)
 
         stats.end_harvest()
 
@@ -158,6 +162,8 @@ class Harvester():
             this_record = records.find_record(endpoint=endpoint, irn=irn)
             if not this_record:
                 extension_record = self.create_single_record(endpoint=endpoint, irn=irn)
+                if config.get("rate_limited"):
+                    time.sleep(self.sleep)
                 if extension_record:
                     stats.extension_records_count += 1
                     if label:
@@ -167,6 +173,5 @@ class Harvester():
                     this_record.relate_record(label=label, related_record_pid=related_record_pid)
             progress_counter += 1
             progress.update(progress_counter)
-            time.sleep(self.sleep)
 
 harvester = Harvester()

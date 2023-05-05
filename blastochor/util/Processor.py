@@ -300,7 +300,8 @@ def related(data, size, types):
     results = json.loads(requests.get(related_url, headers=headers).text).get("results")
     stats.api_call_count +=1
     
-    time.sleep(0.1)
+    if config.get("rate_limited"):
+        time.sleep(0.1)
 
     return results
 

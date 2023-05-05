@@ -191,6 +191,10 @@ class Scroll():
 
 			if not config.get("quiet"):
 				print("Scroll get url: {}".format(self.scroll_get_url))
+		else:
+			# TODO: Fail gracefully if no search results
+			if not config.get("quiet"):
+				print(response.status_code, response.text)
 
 	def get_scroll(self):
 		while self.status_code == 303:

@@ -9,24 +9,20 @@
     - 1:
       endpoint: object
       path: id
-      for_label: identification
+      for_label: identification, multimedia, measurementorfact
     - 2:
-      endpoint: object
-      path: id
-      for_label: multimedia
-    - 3:
       endpoint: fieldcollection
       path: evidenceFor.atEvent.id
       for_label: null
-    - 4:
+    - 3:
       endpoint: taxon
       path: identification.i.toTaxon.id
       for_label: null
-    - 5:
+    - 4:
       endpoint: agent
       path: evidenceFor.atEvent.recordedBy.i.id
       for_label: null
-    - 6:
+    - 5:
       endpoint: agent
       path: identification.i.identifiedBy.id
       for_label: null
@@ -55,9 +51,6 @@
     - accessRights:
       - hardcoded:
         - https://data.tepapa.govt.nz/docs/
-    - bibliographicCitation:
-      - literal:
-        - captionFormatted
     - references:
       - format_string:
         - https://collections.tepapa.govt.nz/object/{}
@@ -281,9 +274,6 @@
         - fieldcollection
       - literal:
         - atLocation.georeferenceSources
-    - measurementRemarks:
-      - collate_list:
-        - observedDimension.i.title
     - identificationID:
       - format_string:
         - tepapa:collection/identification/{}/{}
@@ -469,5 +459,29 @@
       - literal:
         - hasRepresentation.i.rights.title
     - rightsHolder:
-      - hardcoded:
-        - Museum of New Zealand Te Papa Tongarewa
+      - literal:
+        - hasRepresentation.i.rights.title
+      - map_value:
+          No Known Copyright Restrictions: null
+          CC BY-NC-ND 4.0: Museum of New Zealand Te Papa Tongarewa
+          CC BY 4.0: Museum of New Zealand Te Papa Tongarewa
+          All Rights Reserved: Museum of New Zealand Te Papa Tongarewa
+
+- measurementorfact:
+  label: measurementorfact
+  reference_column: OccurrenceID
+  primary_endpoint: object
+  explode: observedDimension
+  reduce: null
+  extend: null
+  fields:
+    - measurementID:
+      - format_string:
+        - tepapa:collection/measurement/{}/{}
+        - parent_id, explode_ordinal
+    - measurementRemarks:
+      - literal:
+        - observedDimension.i.title
+    - measurementDeterminedDate:
+      - literal:
+        - observedDimension.i.date

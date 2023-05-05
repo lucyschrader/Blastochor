@@ -16,6 +16,7 @@ This repo includes a basic mapping file that will be used if another is not prov
 - Command line options to run a search or single record, returning json or flattened default csv
 - Front end to create mapping file and run from browser
 - Look into how easily this app could be forked for other museum APIs
+- A lot more error handling and ability to fail gracefully
 
 ## Installation
 Clone this repo using `git clone`. Install the following packages:
@@ -35,6 +36,8 @@ When your config and mapping are ready, run the app with `python -m app`.
 
 ### Setup
 `api_key_env`: Environment name for your unique API key. Default is TE-PAPA-KEY
+
+`rate_limited`: If `true` stops Blastochor from making more than 10 requests a second, the API's upper limit.
 
 `mapping_file`: Filename for file containing data mapping rules. Default is null (points to a default mapping inside the app)
 
@@ -127,11 +130,11 @@ This checks harvested records for an IRN in the evidenceFor.atEvent.id field. If
 
 If the record has already been harvested, the record object will just be updated with a flag that it needs to be included in that file.
 
-To output another CSV with the same endpoint as the core file, just point the extend rule back to the source. For example:
+To output another CSV with the same endpoint as the core file and using the same path, just add it to the same item's `for_label` with a `, `. For example:
 ```
 endpoint: object
 path: id
-for_label: identification
+for_label: identification, multimedia
 ```
 
 If `for_label` is `null`, the record will be saved but not written out anywhere - do this if you just need some of the record's data for another function.

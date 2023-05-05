@@ -197,11 +197,11 @@ class AppStats():
         if seconds > 3600:
             hours = seconds // 3600
             minutes = (seconds // 60) % 60
-            return "{h} hours and {m} minutes".format(h=hours, m=minutes)
+            return "{h} hours and {m} minutes".format(h=floor(hours), m=floor(minutes))
         elif seconds > 60:
             minutes = seconds // 60
             seconds = seconds - (minutes * 60)
-            return "{m} minutes and {s} seconds".format(m=minutes, s=seconds)
+            return "{m} minutes and {s} seconds".format(m=floor(minutes), s=floor(seconds))
         else:
             return "{} seconds".format(round(seconds))
 

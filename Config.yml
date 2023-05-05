@@ -4,6 +4,7 @@
 
 # Setup
 api_key_env: TE-PAPA-KEY
+rate_limited: true
 mapping_file: gbifmap-plants.yaml
 corefile: core
 input_dir: input_files
@@ -37,8 +38,8 @@ attempts: 3
 list_source: null
 
 # Search/scroll mode settings
-max_records: 100
-size: 100
+max_records: 50000
+size: 1000
 
 query: "*"
 sort: null

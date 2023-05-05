@@ -56,11 +56,16 @@ class Mapping():
         for trigger in output_map.get("extend"):
             harvest_path = trigger.get("path")
             harvest_endpoint = trigger.get("endpoint")
-            label = trigger.get("for_label")
+            labels = trigger.get("for_label")
+            if labels:
+                for label in labels.split(", "):
+                    new_trigger = ReharvestTrigger(parent_endpoint=endpoint, harvest_path=harvest_path, harvest_endpoint=harvest_endpoint, label=label)
 
-            new_trigger = ReharvestTrigger(parent_endpoint=endpoint, harvest_path=harvest_path, harvest_endpoint=harvest_endpoint, label=label)
+                    self.reharvest_triggers.append(new_trigger)
+            else:
+                new_trigger = ReharvestTrigger(parent_endpoint=endpoint, harvest_path=harvest_path, harvest_endpoint=harvest_endpoint, label=None)
 
-            self.reharvest_triggers.append(new_trigger)
+                self.reharvest_triggers.append(new_trigger)
 
     def load_rule(self, output_label, fieldname):
         file_rules = self.mapping_rules.get(output_label)
