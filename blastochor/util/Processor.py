@@ -8,7 +8,8 @@ import random
 import re
 import htmllaundry
 
-from blastochor.settings.Settings import config, stats
+from blastochor.settings.Settings import config
+from blastochor.settings.Stats import stats
 from blastochor.util.Records import records
 
 with open("blastochor/resources/iso_countrycodes.json") as f:

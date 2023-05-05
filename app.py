@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from blastochor.settings.Settings import config, stats, InputList
+from blastochor.settings.Settings import config, InputList
+from blastochor.settings.Stats import stats
 from blastochor.util import Mapper, Harvester, Records
 
 if __name__ == '__main__':

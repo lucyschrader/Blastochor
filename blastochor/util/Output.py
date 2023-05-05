@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from blastochor.settings.Settings import config, stats, ProgressBar
+from blastochor.settings.Settings import config
+from blastochor.settings.Stats import stats, ProgressBar
 import blastochor.util.Processor as processor
 from blastochor.util.Records import records
 from blastochor.util import Writer

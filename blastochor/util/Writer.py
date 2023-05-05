@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import csv
-#from datetime import datetime
-from blastochor.settings.Settings import config, stats
+from blastochor.settings.Settings import config
+from blastochor.settings.Stats import stats
 
 class OutputCSV():
 	def __init__(self, label):
@@ -13,8 +13,6 @@ class OutputCSV():
 		self.writer = csv.writer(self.file, delimiter=",")
 
 	def generate_filename(self):
-		#current_time = datetime.now.strftime("%d-%m-%Y_%H-%M")
-		#name = "{t}-{l}-export.csv".format(t=current_time, l=self.label)
 		name = "{}-export.csv".format(self.label)
 		path = "{}/".format(config.get("output_dir"))
 		return path + name

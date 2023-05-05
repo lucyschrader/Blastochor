@@ -6,7 +6,8 @@ import math
 import time
 
 from blastochor.api.askCO import Search, Scroll, Resource
-from blastochor.settings.Settings import config, stats, ProgressBar
+from blastochor.settings.Settings import config
+from blastochor.settings.Stats import stats, ProgressBar
 from blastochor.util.ApiRecord import ApiRecord
 from blastochor.util.Mapper import mapping
 import blastochor.util.Processor as processor

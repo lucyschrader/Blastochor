@@ -2,7 +2,8 @@ from requests import get, post, exceptions
 import json
 import os
 import time
-from blastochor.settings.Settings import config, stats
+from blastochor.settings.Settings import config
+from blastochor.settings.Stats import stats
 
 class Query():
 	# Run a single query to the API to return either a page of results or a single resource

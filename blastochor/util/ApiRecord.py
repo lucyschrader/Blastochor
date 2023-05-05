@@ -2,6 +2,7 @@
 
 import json
 from blastochor.settings.Settings import config, stats
+from blastochor.settings.Stats import stats
 from blastochor.util.Mapper import mapping
 from blastochor.util.Records import records
 from blastochor.util import Writer
