@@ -108,8 +108,6 @@
         - conditional:
           - related.i.contentUrl
           - related.i.title=ORCID
-      - concatenate:
-        - null
     - sex:
       - literal:
         - sex
@@ -466,22 +464,3 @@
           CC BY-NC-ND 4.0: Museum of New Zealand Te Papa Tongarewa
           CC BY 4.0: Museum of New Zealand Te Papa Tongarewa
           All Rights Reserved: Museum of New Zealand Te Papa Tongarewa
-
-- measurementorfact:
-  label: measurementorfact
-  reference_column: OccurrenceID
-  primary_endpoint: object
-  explode: observedDimension
-  reduce: null
-  extend: null
-  fields:
-    - measurementID:
-      - format_string:
-        - tepapa:collection/measurement/{}/{}
-        - parent_id, explode_ordinal
-    - measurementRemarks:
-      - literal:
-        - observedDimension.i.title
-    - measurementDeterminedDate:
-      - literal:
-        - observedDimension.i.date

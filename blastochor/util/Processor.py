@@ -123,8 +123,6 @@ def conditional_inclusion(data, value_path, check_path, check_values):
                     ordinal = check_list.index(check_value)
                     conditional_values.append(literal(data, path=value_path, ordinal=ordinal))
 
-            return conditional_values
-
     else:
         check = literal(data, path=check_path)
         if not check:
@@ -135,7 +133,11 @@ def conditional_inclusion(data, value_path, check_path, check_values):
                 if check == check_value:
                     conditional_values.append(literal(data, path=value_path))
 
-            return conditional_values
+    # Return a list if there are multiple matches, otherwise just a single value
+    if len(conditional_values) == 1:
+        return conditional_values[0]
+    else:
+        return conditional_values
 
     return None
 
