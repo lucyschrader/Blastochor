@@ -9,7 +9,7 @@
     - 1:
       endpoint: object
       path: id
-      for_label: identification, multimedia, measurementorfact
+      for_label: identification, multimedia
     - 2:
       endpoint: fieldcollection
       path: evidenceFor.atEvent.id
@@ -265,6 +265,12 @@
         - fieldcollection
       - collate_list:
         - atLocation.mappingDetails.i.geodeticDatum
+      - for_each:
+        - map_value:
+            EPSG:2193: EPSG:4326
+            EPSG:4326: EPSG:4326
+            EPSG:27200: ESPG:27200
+            EPSG:27259: EPSG:27259
     - georeferenceSources:
       - literal:
         - evidenceFor.atEvent.id
@@ -274,8 +280,8 @@
         - atLocation.georeferenceSources
     - identificationID:
       - format_string:
-        - tepapa:collection/identification/{}/{}
-        - parent_id, explode_ordinal
+        - tepapa:collection/identification/{}/0
+        - parent_id
     - identificationQualifier:
       - literal:
         - identification.i.qualifier
@@ -285,8 +291,9 @@
     - typeStatus:
       - format_string:
         - "{} of {}"
-        - identification.i.typeStatus, identification.i.qualifiedName
+        - identification.i.typeStatus, identification.i.toTaxon.scientificName
         - required
+        - strip= (possible)
     - identifiedBy:
       - literal:
         - identification.i.identifiedBy.title
@@ -301,6 +308,24 @@
     - dateIdentified:
       - literal:
         - identification.i.dateIdentified
+    - identificationRemarks:
+      - literal:
+        - identification.i.typeStatus
+      - map_value:
+          epitype (possible): Epitype status uncertain
+          holotype (possible): Holotype status uncertain
+          isolectotype (possible): Isolectotype status uncertain
+          isoneotype (possible): Isoneotype status uncertain
+          isoparatype (possible): Isoparatype status uncertain
+          isosyntype (possible): Isosyntype status uncertain
+          isotype (possible): Isotype status uncertain
+          lectotype (possible): Lectotype status uncertain
+          neotype (possible): Neotype status uncertain
+          paralectotype (possible): Paralectotype status uncertain
+          paratype (possible): Paratype status uncertain
+          syntype (possible): Syntype status uncertain
+          topotype (possible): Topotype status uncertain
+          type (possible): Type status uncertain
     - taxonID:
       - literal:
         - identification.i.toTaxon.pid
@@ -310,6 +335,13 @@
     - taxonRank:
       - literal:
         - identification.i.toTaxon.rank
+    - scientificNameAuthorship:
+      - literal:
+        - identification.i.toTaxon.id
+      - lookup:
+        - taxon
+      - literal:
+        - scientificNameAuthorshipSummary
     - higherClassification:
       - literal:
         - identification.i.toTaxon.higherClassification
@@ -328,9 +360,18 @@
     - family:
       - literal:
         - identification.i.toTaxon.family
+    - subfamily:
+      - literal:
+        - identification.i.toTaxon.subfamily
     - genus:
       - literal:
         - identification.i.toTaxon.genus
+    - subgenus:
+      - literal:
+        - identification.i.toTaxon.subgenus
+    - specificEpithet:
+      - literal:
+        - identification.i.toTaxon.species
     - vernacularName:
       - literal:
         - identification.i
@@ -365,8 +406,9 @@
     - typeStatus:
       - format_string:
         - "{} of {}"
-        - typeStatus, qualifiedName
+        - typeStatus, toTaxon.scientificName
         - required
+        - strip= (possible)
     - identifiedBy:
       - literal:
         - identifiedBy.title
@@ -381,6 +423,24 @@
     - dateIdentified:
       - literal:
         - dateIdentified
+    - identificationRemarks:
+      - literal:
+        - typeStatus
+      - map_value:
+          epitype (possible): Epitype status uncertain
+          holotype (possible): Holotype status uncertain
+          isolectotype (possible): Isolectotype status uncertain
+          isoneotype (possible): Isoneotype status uncertain
+          isoparatype (possible): Isoparatype status uncertain
+          isosyntype (possible): Isosyntype status uncertain
+          isotype (possible): Isotype status uncertain
+          lectotype (possible): Lectotype status uncertain
+          neotype (possible): Neotype status uncertain
+          paralectotype (possible): Paralectotype status uncertain
+          paratype (possible): Paratype status uncertain
+          syntype (possible): Syntype status uncertain
+          topotype (possible): Topotype status uncertain
+          type (possible): Type status uncertain
     - taxonID:
       - literal:
         - toTaxon.pid
@@ -390,6 +450,13 @@
     - taxonRank:
       - literal:
         - toTaxon.rank
+    - scientificNameAuthorship:
+      - literal:
+        - toTaxon.id
+      - lookup:
+        - taxon
+      - literal:
+        - scientificNameAuthorshipSummary
     - higherClassification:
       - literal:
         - toTaxon.higherClassification
@@ -408,9 +475,18 @@
     - family:
       - literal:
         - toTaxon.family
+    - subfamily:
+      - literal:
+        - toTaxon.subfamily
     - genus:
       - literal:
         - toTaxon.genus
+    - subgenus:
+      - literal:
+        - toTaxon.subgenus
+    - specificEpithet:
+      - literal:
+        - toTaxon.species
     - vernacularName:
       - collate_list:
         - toTaxon.vernacularName.i.title

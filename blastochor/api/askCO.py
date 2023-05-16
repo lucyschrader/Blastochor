@@ -35,11 +35,11 @@ class Query():
 				except exceptions.ConnectionError:
 					if not config.get("quiet"):
 						print("Disconnected trying to get {}".format(url))
-					time.sleep(1)
+					time.sleep(0.5)
 				except exceptions.HTTPError:
 					if not config.get("quiet"):
 						print(response.status_code)
-					time.sleep(1)
+					time.sleep(0.1)
 			else:
 				stats.api_call_count +=1
 
@@ -62,7 +62,6 @@ class Search():
 		self.start = kwargs.get("start")
 		self.size = kwargs.get("size")
 		self.filters = kwargs.get("filters")
-		self.headers = kwargs.get("headers")
 
 		self.status_code = None
 		self.results = None
@@ -106,12 +105,12 @@ class Search():
 			query_parts = []
 
 			if self.query:
-				query_parts.append(query)
+				query_parts.append(self.query)
 			if self.filters:
 				for f in filters:
 					query_parts.append("{k}:{v}".format(k=f["field"], v=f["keyword"]))
 
-			query_string = " AND ".joint(query_parts)
+			query_string = " AND ".join(query_parts)
 			url_parts.append(query_string)
 			
 			if self.fields:
@@ -238,7 +237,8 @@ class Results():
 		if self.status == "200" or "303":
 			response = json.loads(response.text)
 			self.result_count = response["_metadata"]["resultset"]["count"]
-			print("Retrieving {} records".format(self.result_count))
+			if not config.get("quiet"):
+				print("Retrieving {} records".format(self.result_count))
 
 	def add_records(self, response):
 		if self.status == "200" or "303":

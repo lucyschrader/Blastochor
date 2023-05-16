@@ -139,6 +139,8 @@ for_label: identification, multimedia
 
 If `for_label` is `null`, the record will be saved but not written out anywhere - do this if you just need some of the record's data for another function.
 
+Extension records are batched and retrieved in lots of 250 per endpoint.
+
 ### Fields
 The `fields` section contains a list of data transformation rules, headed up with the output field names. These need to be in the order you want them to show in your CSV. The rules are applied to every record included in the file.
 

@@ -36,7 +36,9 @@ class OutputCSV():
 			# If a value is still a list after processing, turn it into a string
 			if isinstance(value, list):
 				value = [str(i) for i in value if i is not None]
-				if len(value) == 1:
+				if len(value) == 0:
+					value = None
+				elif len(value) == 1:
 					value = value[0]
 				elif len(value) > 1:
 					value = " | ".join(value)

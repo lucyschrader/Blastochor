@@ -133,13 +133,13 @@ def conditional_inclusion(data, value_path, check_path, check_values):
                 if check == check_value:
                     conditional_values.append(literal(data, path=value_path))
 
-    # Return a list if there are multiple matches, otherwise just a single value
-    if len(conditional_values) == 1:
+    # Return a single value if there is only one match, a list if there are multiple, None if there aren't any
+    if len(conditional_values) == 0:
+        return None
+    elif len(conditional_values) == 1:
         return conditional_values[0]
     else:
         return conditional_values
-
-    return None
 
 def country_code(data, path):
     # Find the name of a country and map it to an ISO-3166 two letter code
@@ -154,6 +154,7 @@ def country_code(data, path):
             return None
 
 def create_filename(data, suffix):
+    # Remove unsafe characters from a string to form a usable filename
     data = data.replace(" ", "_")
     data = data.replace("?", "")
     data = data.replace("\"", "")
@@ -188,6 +189,7 @@ def format_string(data, **kwargs):
     string = kwargs.get("string")
     inserts = kwargs.get("inserts")
     required = kwargs.get("required")
+    strip = kwargs.get("strip")
     explode_ordinal = kwargs.get("explode_ordinal")
     record_pid = kwargs.get("record_pid")
 
@@ -197,7 +199,7 @@ def format_string(data, **kwargs):
             if "+" in path:
                 modifier = int(path.split("+")[1])
                 explode_ordinal += modifier
-            if explode_ordinal is not None or (explode_ordinal == 0):
+            if (explode_ordinal is not None) or (explode_ordinal == 0):
                 values.append(str(explode_ordinal))
             else:
                 values.append("")
@@ -221,6 +223,10 @@ def format_string(data, **kwargs):
         spaces = string.count("{}")
         if len(values) != spaces:
             return None
+
+    if strip:
+        edit_string = strip.split("=")[1]
+        values = [value.replace(edit_string, "") for value in values]
 
     return string.format(*values)
 
@@ -355,7 +361,14 @@ class RowProcessor():
             requirement_value = output_row.requires[requirement]
             requirement_path = requirement.split(".")
             row_value = literal(data=output_row.data, path=requirement_path, ordinal=output_row.explode_ordinal)
-            if row_value != requirement_value:
+            if type(requirement_value) == bool:
+                if requirement_value == True:
+                    if not row_value:
+                        output_row.meets_requirement = False
+                elif requirement_value == False:
+                    if row_value:
+                        output_row.meets_requirement = False
+            elif row_value != requirement_value:
                 output_row.meets_requirement = False
 
     def populate_values(self):
@@ -513,27 +526,27 @@ class FunctionProcessor():
                 string = self.params[0]
                 inserts = self.params[1]
                 required = False
-                try:
-                    if self.params[2] == "required":
-                            required = True
-                except IndexError:
-                    pass
+                if "required" in self.params:
+                    required = True
+                strip = next((param for param in self.params if param.startswith("strip")), None)
+
                 inserts = inserts.split(", ")
 
-                self.output_value = format_string(self.input_value, string=string, inserts=inserts, required=required, explode_ordinal=self.output_row.explode_ordinal, record_pid=self.output_row.record_pid)
+                self.output_value = format_string(self.input_value, string=string, inserts=inserts, required=required, strip=strip, explode_ordinal=self.output_row.explode_ordinal, record_pid=self.output_row.record_pid)
 
             case "hardcoded":
                 value = self.params[0]
-                if "explode_ordinal" in value:
-                    modifier = None
-                    if "+" in value:
-                        modifier = int(value.split("+")[1])
-                    if self.output_row.explode_ordinal:
-                        value = int(self.output_row.explode_ordinal)
-                    else:
-                        value = 0
-                    if modifier:
-                        value += modifier
+                if value:
+                    if "explode_ordinal" in value:
+                        modifier = None
+                        if "+" in value:
+                            modifier = int(value.split("+")[1])
+                        if self.output_row.explode_ordinal:
+                            value = int(self.output_row.explode_ordinal)
+                        else:
+                            value = 0
+                        if modifier:
+                            value += modifier
                 self.output_value = hardcode_value(value)
 
             case "literal":

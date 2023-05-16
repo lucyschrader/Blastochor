@@ -54,11 +54,16 @@
       - literal:
         - hasRepresentation.i.rights.title
     - copyrightStatusQID:
-      - hardcoded:
-        - null
+      - literal:
+        - hasRepresentation.i.rights.title
+      - map_value:
+        - No Known Copyright Restrictions: Q19652
+        - CC BY 4.0: Q50423863
     - copyrightLicenseQID:
-      - hardcoded:
-        - null
+      - literal:
+        - hasRepresentation.i.rights.title
+      - map_value:
+        - CC BY 4.0: Q20007257
     - recordedByID:
       - collate_list:
         - evidenceFor.atEvent.recordedBy.i.id
@@ -74,8 +79,6 @@
         - conditional:
           - related.i.contentUrl
           - related.i.title=ORCID
-        - concatenate:
-          - null
     - recordedByQID:
       - collate_list:
         - evidenceFor.atEvent.recordedBy.i.id
@@ -85,8 +88,6 @@
         - conditional:
           - related.i.contentUrl
           - related.i.title=Wikidata
-        - concatenate:
-          - null
     - dateCollected:
       - literal:
         - evidenceFor.atEvent.eventDate

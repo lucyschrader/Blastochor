@@ -120,6 +120,7 @@ class Harvester():
         print("All records in list saved")
 
     def create_single_record(self, endpoint=None, irn=None):
+        # Look up a single record and turn it into an ApiRecord object
         resource = Resource(endpoint=endpoint, irn=irn)
         if not resource.error_code:
             new_record = ApiRecord(data=resource.data, endpoint=endpoint)
@@ -155,24 +156,75 @@ class Harvester():
         print("Running extra queries")
         progress = ProgressBar(length=len(self.reharvest_list))
         progress_counter = 0
-        for query in self.reharvest_list:
-            irn = query["irn"]
-            endpoint = query["endpoint"]
-            label = query["label"]
-            related_record_pid = query["related_record_pid"]
+
+        # Split up records by endpoint to allow searching just by IRN
+        queries_by_endpoint = []
+        for record_trigger in self.reharvest_list:
+            endpoint = record_trigger["endpoint"]
+            irn = record_trigger["irn"]
+            label = record_trigger["label"]
+            related_record_pid = record_trigger["related_record_pid"]
             this_record = records.find_record(endpoint=endpoint, irn=irn)
             if not this_record:
-                extension_record = self.create_single_record(endpoint=endpoint, irn=irn)
-                if config.get("rate_limited"):
-                    time.sleep(self.sleep)
-                if extension_record:
-                    stats.extension_records_count += 1
-                    if label:
-                        extension_record.relate_record(label=label, related_record_pid=related_record_pid)
+                # Format a segment of the search query and store it to run a batch search
+                this_endpoint_queries = next(filter(lambda queries: queries.endpoint == endpoint, queries_by_endpoint), None)
+
+                if not this_endpoint_queries:
+                    this_endpoint_queries = ReharvestQueries(endpoint=endpoint)
+                    queries_by_endpoint.append(this_endpoint_queries)
+                if irn not in this_endpoint_queries.endpoint_irns:
+                    this_endpoint_queries.endpoint_irns.append(irn)
+                
+                # Run whenever there's 500 IRNs saved for an endpoint
+                if len(this_endpoint_queries.endpoint_irns) == 250:
+                    this_endpoint_queries.run_endpoint_reharvest()
+
             else:
                 if label:
                     this_record.relate_record(label=label, related_record_pid=related_record_pid)
+
             progress_counter += 1
             progress.update(progress_counter)
+
+        # Run searches for remaining records
+        for this_endpoint_queries in queries_by_endpoint:
+            this_endpoint_queries.run_endpoint_reharvest()
+
+    def save_reharvest_records(self, reharvest_results):
+        for record in reharvest_results.records:
+            record_trigger = next(filter(lambda record_trigger: record_trigger.get("irn") == record.get("id"), self.reharvest_list), None)
+
+            # Get the extra details of the trigger to allow saving the record and any extra labels
+            if record_trigger:
+                endpoint = record_trigger["endpoint"]
+                irn = record_trigger["irn"]
+                label = record_trigger["label"]
+                related_record_pid = record_trigger["related_record_pid"]
+
+                extension_record = ApiRecord(data=record, endpoint=endpoint)
+                records.append(extension_record)
+
+                stats.extension_records_count += 1
+
+                if label:
+                    extension_record.relate_record(label=label, related_record_pid=related_record_pid)
+
+class ReharvestQueries():
+    def __init__(self, endpoint):
+        self.endpoint = endpoint
+        self.endpoint_irns = []
+
+    def run_endpoint_reharvest(self):
+        query_strings = []
+        for irn in self.endpoint_irns:
+            query_strings.append("(id:{})".format(irn))
+        query = " OR ".join(query_strings)
+
+        reharvest_results = Search(query=query, endpoint=self.endpoint, size=250).results
+        if reharvest_results:
+            harvester.save_reharvest_records(reharvest_results)
+
+        # Empty the list of query strings so new ones can be added
+        self.endpoint_irns = []
 
 harvester = Harvester()
