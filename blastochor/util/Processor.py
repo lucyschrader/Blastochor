@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
-import requests
 import time
 import json
 from math import floor
 import random
 import re
 import htmllaundry
+from askCO import Resource
 
 from blastochor.settings.Settings import config
 from blastochor.settings.Stats import stats
@@ -286,33 +286,24 @@ def process_quality_score(data):
 
 def related(data, size, types):
     # Make a fresh query to the special /related endpoint for the current record
-    # Collate values from the path specified
-    values = []
-    
-    auth_key = "x-api-key"
-    auth_value = config.get("api_key")
-    headers = {auth_key: auth_value, "Content-Type": "application/json", "Accept": "application/json;profiles=tepapa.collections.api.v1"}
-    related_url = "{}/related".format(data.get("href"))
+    endpoint = data.get("href").split("/")[-2]
+    irn = data.get("id")
 
-    if size or types:
-        related_url += "?"
-    if size:
-        related_url += "size={}".format(size)
-    if size and types:
-        related_url += "&"
-    if types:
-        related_url += "types={}".format(types)
+    query = Resource(
+        quiet=config.get("quiet"),
+        api_key=config.get("api_key"),
+        timeout=config.get("timeout"),
+        attempts=config.get("attempts"),
+        endpoint=endpoint,
+        irn=irn,
+        related=True,
+        size=kwargs.get("size"),
+        types=kwargs.get("types"))
 
-    if not config.get("quiet"):
-        print("Requesting {}".format(related_url))
+    query.send_query()
+    stats.api_call_count += 1
 
-    results = json.loads(requests.get(related_url, headers=headers).text).get("results")
-    stats.api_call_count +=1
-    
-    if config.get("rate_limited"):
-        time.sleep(0.1)
-
-    return results
+    return query.records
 
 def use_config(key):
     return config.get(key)

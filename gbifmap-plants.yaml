@@ -185,9 +185,6 @@
     - locality:
       - literal:
         - evidenceFor.atEvent.atLocation.locality
-    - verbatimLocality:
-      - literal:
-        - evidenceFor.atEvent.atLocation.verbatimLocality
     - verbatimElevation:
       - literal:
         - evidenceFor.atEvent.id
@@ -265,12 +262,6 @@
         - fieldcollection
       - collate_list:
         - atLocation.mappingDetails.i.geodeticDatum
-      - for_each:
-        - map_value:
-            EPSG:2193: EPSG:4326
-            EPSG:4326: EPSG:4326
-            EPSG:27200: ESPG:27200
-            EPSG:27259: EPSG:27259
     - georeferenceSources:
       - literal:
         - evidenceFor.atEvent.id
@@ -372,6 +363,13 @@
     - specificEpithet:
       - literal:
         - identification.i.toTaxon.species
+    - infraspecificEpithet:
+      - literal:
+        - identification.i.toTaxon.id
+      - lookup:
+        - taxon
+      - literal:
+        - subspecies
     - vernacularName:
       - literal:
         - identification.i
@@ -487,6 +485,13 @@
     - specificEpithet:
       - literal:
         - toTaxon.species
+    - infraspecificEpithet:
+      - literal:
+        - toTaxon.id
+      - lookup:
+        - taxon
+      - literal:
+        - subspecies
     - vernacularName:
       - collate_list:
         - toTaxon.vernacularName.i.title

@@ -38,7 +38,6 @@ class ApiRecord():
                     if quality_score > stats.quality_score_upper:
                         stats.quality_score_upper = quality_score
 
-
     def make_writable(self):
         for output in mapping.outputs:
             label = output.label
@@ -46,7 +45,7 @@ class ApiRecord():
                 self.structure.update({label: {"write": True, "pointers": []}})
 
                 if not config.get("quiet"):
-                    print("Record {p} will write to {o}".format(p=self.pid, o=label))
+                    print("Record {p} will write to {l}".format(p=self.pid, l=label))
 
             else:
                 self.structure.update({label: {"write": False, "pointers": None}})

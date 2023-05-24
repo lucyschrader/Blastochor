@@ -4,7 +4,6 @@
 
 # Setup
 api_key_env: TE-PAPA-KEY
-rate_limited: true
 mapping_file: gbifmap-plants.yaml
 corefile: core
 input_dir: input_files
@@ -28,7 +27,7 @@ ungrouped_fields:
 
 # Run
 mode: scroll
-quiet: True
+quiet: false
 base_url: https://data.tepapa.govt.nz/collection
 endpoint: object
 timeout: 5
@@ -38,7 +37,7 @@ attempts: 3
 list_source: null
 
 # Search/scroll mode settings
-max_records: 50000
+max_records: 1000
 size: 1000
 
 query: "*"

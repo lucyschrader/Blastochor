@@ -80,10 +80,11 @@ class Output():
         kwargs["group_role"] = None
 
         # Removes images not being written out if only some selected
-        if config["mode"] == list:
+        if config.get("mode") == "list":
             irn_object = next(filter(lambda input_irn: input_irn.irn == record.data.get("id"), config.get("irn_list")), None)
             if irn_object:
-                if irn_object.harvest_all == False:
+                # TODO: Check if record has no images and raise error if not
+                if len(irn_object.media) < len(record.data.get("hasRepresentation")):
                     record.data = self.remove_nonwriting_images(irn_object, record.data)
 
         # Cuts down the record to a subset if needed
@@ -168,16 +169,10 @@ class Output():
     def remove_nonwriting_images(self, irn_object, record_data):
         # When only writing out specific images, remove any other images from the source data
         has_rep_section = record_data.get("hasRepresentation")
-        # If all images on the record are to be written out
-        if len(has_rep_section) == len(irn_object.media):
-            pass
-        # If not all images on the record are to be written out
-        else:
-            for img in has_rep_section:
-                if img.get("id") not in irn_object.media:
-                    has_rep_section.pop(img)
 
-            record_data["hasRepresentation"] = has_rep_section
+        new_has_rep_section = [sec for sec in has_rep_section if sec.get("id") in irn_object.media]
+
+        record_data["hasRepresentation"] = new_has_rep_section
 
         return record_data
 

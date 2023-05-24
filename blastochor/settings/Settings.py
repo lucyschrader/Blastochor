@@ -103,8 +103,8 @@ class InputList():
                 source_data = csv.DictReader(f, delimiter=",")
 
                 for row in source_data:
-                    this_irn = row.get("record_irn")
-                    this_media_irn = row.get("media_irn")
+                    this_irn = int(row.get("record_irn"))
+                    this_media_irn = int(row.get("media_irn"))
                     if config.get("use_skipfile") == True:
                         if self.skip_check(this_irn) == True:
                             break
@@ -114,7 +114,9 @@ class InputList():
                         this_irn_object = InputIRN(irn=this_irn)
                         if this_media_irn:
                             this_irn_object.media.append(this_media_irn)
-                            this_irn_object.harvest_all = False
+                        else:
+                            # Harvest all images if no media IRN has been specified in source
+                            this_irn_object.harvest_all = True
                         irn_list.append(this_irn_object)
                     else:
                         if this_media_irn:
@@ -129,8 +131,10 @@ class InputList():
                     if config.get("use_skipfile") == True:
                         if self.skip_check(this_irn) == True:
                             break
-                    this_irn_object = InputIRN(irn=irn)
-                    irn_list.append(this_irn_object)
+                    this_irn_object = next(filter(lambda input_irn: input_irn.irn == this_irn, irn_list), None)
+                    if not this_irn_object:
+                        this_irn_object = InputIRN(irn=irn)
+                        irn_list.append(this_irn_object)
 
         config["irn_list"] = irn_list
         
@@ -143,7 +147,6 @@ class InputList():
 class InputIRN():
     def __init__(self, irn=None):
         self.irn = irn
-        self.harvest_all = True
         self.media = []
 
 config = read_config()

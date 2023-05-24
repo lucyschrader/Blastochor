@@ -20,7 +20,7 @@ This repo includes a basic mapping file that will be used if another is not prov
 
 ## Installation
 Clone this repo using `git clone`. Install the following packages:
-- Requests
+- askCO
 - PyYAML
 
 Go to https://data.tepapa.govt.nz/docs/register.html and register for an API key. Add the API key to an environment variable called 'TE-PAPA-KEY'.
@@ -35,62 +35,60 @@ The main functional setting is `search`, `scroll` or `list`. You can either send
 When your config and mapping are ready, run the app with `python -m app`.
 
 ### Setup
-`api_key_env`: Environment name for your unique API key. Default is TE-PAPA-KEY
+`api_key_env`: Environment name for your unique API key. Default is `TE-PAPA-KEY`
 
-`rate_limited`: If `true` stops Blastochor from making more than 10 requests a second, the API's upper limit.
+`mapping_file`: Filename for file containing data mapping rules. Default is 11 (points to a default mapping inside the app)
 
-`mapping_file`: Filename for file containing data mapping rules. Default is null (points to a default mapping inside the app)
+`corefile`: If exporting multiple files, set to the label of the primary file, eg `core`. Default is `null`
 
-`corefile`: If exporting multiple files, set to the label of the primary file, eg "core". Default is null
+`input_dir`: Directory holding any source files, like a skiplist or list or IRNs. Default is `input_files`
 
-`input_dir`: Directory holding any source files, like a skiplist or list or IRNs. Default is input_files
+`output_dir`: Directory for exported CSVs. Default is `output_files`
 
-`output_dir`: Directory for exported CSVs. Default is output_files
+`use_skiplist`: Set to `true` if using a skiplist. Default is `false`
 
-`use_skiplist`: Set to True if using a skiplist. Default is False
+`skipfile`: Filename for skiplist. Default is `null`
 
-`skipfile`: Filename for skiplist. Default is null
+`min_image_size`: Only export object records that have images that are at least this many px on each side. Default is `null`
 
-`min_image_size`: Only export object records that have images that are at least this many px on each side. Default is blank
+`max_list_size`: Only collate lists of values into a single value up to the specified size. Default is `100`
 
-`max_list_size`: Only collate lists of values into a single value up to the specified size. Default is 100
+`group_rows`: If exploding records into multiple rows, set to `true` to group them under a parent row. Default is `null`
 
-`group_rows`: If exploding records into multiple rows, set to true to group them under a parent row. Default is null
+`parent_label`: If grouping rows, sets a label for the parent. Only used if `group_rows` is `true`
 
-`parent_label`: If grouping rows, sets a label for the parent. Only used if `group_rows` is true
-
-`parent_fields`, `child_fields`, `ungrouped_fields`: Specify fields that need to be included or excluded for each kind of row. Set `include` to true to only include the specified fields, or false to include everything except those specified. Only used if `group_rows` is true
+`parent_fields`, `child_fields`, `ungrouped_fields`: Specify fields that need to be included or excluded for each kind of row. Set `include` to `true` to only include the specified fields, or `false` to include everything except those specified. Only used if `group_rows` is `true`
 
 ### Run
-`mode`: Set to search or list. Default is search
+`mode`: Set to search or list. Default is `search`
 
-`quiet`: Set to False if you want progress messages written to the CLI. Default is True
+`quiet`: Set to `false` if you want progress messages written to the CLI. Default is `true`
 
 `base_url`: URL used to query the API. Default is https://data.tepapa.govt.nz/collection/
 
-`endpoint`: Used when querying individual records. Set to the primary endpoint you want data from. Default is object
+`endpoint`: Set to the primary endpoint you want data from, or set to `null` if you want to search across all endpoints. Defaults to `object` when querying individual records if not set
 
-`timeout`: How long in seconds to allow each query before timing out and retrying. Default is 5
+`timeout`: How long in seconds to allow each query before timing out and retrying. Default is `5`
 
-`attempts`: How many times to retry each query before returning None. Default is 3
+`attempts`: How many times to retry each query before returning `None`. Default is `3`
 
 ### List mode settings
 `list_source`: Filename for list of IRNs to query
 
 ### Search/scroll mode settings
-`max-records`: Set a limit on the number of records you want to export. Default is -1 (no limit)
+`max-records`: Set a limit on the number of records you want to export. Default is `-1` (no limit)
 
-`size`: Set a limit on the number of records returned in one page of results. Set to a maximum of 1000 for scroll. Default is 100
+`size`: Set a limit on the number of records returned in one page of results. Set to a maximum of `1000` for scroll. Default is `100`
 
-`query`: String to search for. Default is * (wildcard)
+`query`: String to search for. Default is `*` (wildcard)
 
-`sort`: Fieldname to sort results by, such as id, \_meta.modified. Add a `-` before the field to sort in reverse order. Default is null (sorts by id)
+`sort`: Fieldname to sort results by, such as `id`, `_meta.modified`. Add a `-` before the field to sort in reverse order. Default is `null` (sorts by `id`)
 
 Filters:
 
-`collection`: Set collection to constrain search. Uses the APIs collection labels (PacificCultures, not Pacific Cultures). Default is null
+`collection`: Set collection to constrain search. Uses the APIs collection labels (`PacificCultures`, not Pacific Cultures). Default is `null`
 
-`allows_download`: Set to true to only return object records that include downloadable images, false to only return records that don't. Default is null
+`allows_download`: Set to `true` to only return object records that include downloadable images, `false` to only return records that don't. Default is `null`
 
 `keyword_fields`: Fieldnames for extra filters on your search. Separate with `, `
 
