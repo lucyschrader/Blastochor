@@ -248,6 +248,12 @@ class Harvester():
 
         # Split up records by endpoint to allow searching just by IRN
         queries_by_endpoint = []
+
+        # Set up buckets for each endpoint
+        for e in ["agent", "fieldcollection", "object", "place", "taxon"]:
+            queries_by_endpoint.append(HarvestBatch(endpoint=e))
+        
+        # Run through the list of needed records
         for record_trigger in self.reharvest_list:
             endpoint = record_trigger["endpoint"]
             irn = record_trigger["irn"]
@@ -258,11 +264,8 @@ class Harvester():
                 # Format a segment of the search query and store it to run a batch search
                 this_endpoint_queries = next(filter(lambda queries: queries.endpoint == endpoint, queries_by_endpoint), None)
 
-                if not this_endpoint_queries:
-                    this_endpoint_queries = HarvestBatch(endpoint=endpoint)
-                    queries_by_endpoint.append(this_endpoint_queries)
-
                 irn_formatted = "(id:{})".format(irn)
+
                 if irn_formatted not in this_endpoint_queries.irns:
                     this_endpoint_queries.irns.append(irn_formatted)
                 
@@ -270,7 +273,7 @@ class Harvester():
                 if len(this_endpoint_queries.irns) == 250:
                     reharvest_batch = self.batch_search(irn_batch=this_endpoint_queries.irns, endpoint=endpoint)
                     self.save_reharvest_records(reharvest_results=reharvest_batch.records, reharvest_endpoint=endpoint)
-                    this_endpoint_queries.irns == []
+                    this_endpoint_queries.irns = []
 
             else:
                 if label:
@@ -282,8 +285,8 @@ class Harvester():
         # Run searches for remaining records
         for this_endpoint_queries in queries_by_endpoint:
             if len(this_endpoint_queries.irns) > 0:
-                reharvest_batch = self.batch_search(irn_batch=this_endpoint_queries.irns, endpoint=endpoint)
-                self.save_reharvest_records(reharvest_results=reharvest_batch.records, reharvest_endpoint=endpoint)
+                reharvest_batch = self.batch_search(irn_batch=this_endpoint_queries.irns, endpoint=this_endpoint_queries.endpoint)
+                self.save_reharvest_records(reharvest_results=reharvest_batch.records, reharvest_endpoint=this_endpoint_queries.endpoint)
 
     def save_reharvest_records(self, reharvest_results, reharvest_endpoint):
         for record in reharvest_results:

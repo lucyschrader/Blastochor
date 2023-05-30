@@ -271,10 +271,11 @@
         - atLocation.georeferenceSources
     - identificationID:
       - format_string:
-        - tepapa:collection/identification/{}/0
-        - parent_id
+        - tepapa:collection/identification/{}/{}
+        - parent_id, identification.i.toTaxon.id
     - identificationQualifier:
-      - literal:
+      - identification_qualifier:
+        - identification.i.toTaxon.id
         - identification.i.qualifier
     - verbatimIdentification:
       - literal:
@@ -394,9 +395,10 @@
     - identificationID:
       - format_string:
         - tepapa:collection/identification/{}/{}
-        - parent_id, explode_ordinal
+        - parent_id, toTaxon.id
     - identificationQualifier:
-      - literal:
+      - identification_qualifier:
+        - toTaxon.id
         - qualifier
     - verbatimIdentification:
       - literal:

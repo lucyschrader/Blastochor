@@ -27,7 +27,7 @@ ungrouped_fields:
 
 # Run
 mode: scroll
-quiet: false
+quiet: true
 base_url: https://data.tepapa.govt.nz/collection
 endpoint: object
 timeout: 5
@@ -41,7 +41,7 @@ max_records: 1000
 size: 1000
 
 query: "*"
-sort: null
+sort: -_meta.modified
 
 filter:
   collection: Plants

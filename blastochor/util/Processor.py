@@ -170,6 +170,10 @@ def create_filename(data, suffix):
 
     return "{d}.{s}".format(d=data, s=suffix)
 
+def extend_value(data, params):
+    # Extend a value to a specified length using a provided string
+    pass
+
 def first_match(data, paths):
     # Try multiple paths in order and return the value of the first available one
     value = None
@@ -183,6 +187,31 @@ def first_match(data, paths):
             return value
 
     return value
+
+def format_identification_qualifier(data, taxon_path, qualifier_path, ordinal):
+    taxon_id = literal(data, path=taxon_path, ordinal=ordinal)
+    if taxon_id:
+        taxon_record = records.find_record(endpoint="taxon", irn=taxon_id)
+        if taxon_record:
+            fields = ["subspecies", "species", "genus"]
+            name = None
+            for field in fields:
+                if taxon_record.data.get(field):
+                    name = taxon_record.data.get(field)
+                    break
+
+            if name:
+                qualifier = literal(data, path=qualifier_path, ordinal=ordinal)
+                if qualifier:
+                    if qualifier in ["?", "s.l.", "s.s.", "pro. hyb.", "pro. sp.", "cv.", "sp. nov.", "sp. nov.?", "prob."]:
+                        return "{n} {q}".format(n=name, q=qualifier)
+                    elif qualifier in ["aff.", "cf."]:
+                        return "{q} {n}".format(q=qualifier, n=name)
+        else:
+            if not config.get("quiet"):
+                print("No record found for taxon record {}".format(taxon_id))
+
+    return None
 
 def format_string(data, **kwargs):
     # Find a value and incorporate it into a specified string
@@ -305,9 +334,6 @@ def related(data, size, types):
 
     return query.records
 
-def use_config(key):
-    return config.get(key)
-
 def truncate_value(data, string_length, suffix):
     # Truncate a value to a specified length, with an optional suffix (eg "...")
     if isinstance(data, str):
@@ -328,9 +354,8 @@ def truncate_value(data, string_length, suffix):
     else:
         return None
 
-def value_extend(data, params):
-    # Extend a value to a specified length using a provided string
-    pass
+def use_config(key):
+    return config.get(key)
 
 class RowProcessor():
     def __init__(self, rules, output_row):
@@ -473,8 +498,6 @@ class FunctionProcessor():
                         self.output_value = processed_sub_f.output_value
                         sub_f_reprocess = processed_sub_f.reprocess
 
-                #print("Post-fallback value: {}".format(self.output_value))
-
             case "clean_html":
                 self.output_value = clean_html(self.input_value)
 
@@ -539,6 +562,11 @@ class FunctionProcessor():
                         if modifier:
                             value += modifier
                 self.output_value = hardcode_value(value)
+
+            case "identification_qualifier":
+                taxon_path = self.params[0].split(".")
+                qualifier_path = self.params[1].split(".")
+                self.output_value = format_identification_qualifier(self.input_value, taxon_path, qualifier_path, self.output_row.explode_ordinal)
 
             case "literal":
                 path = self.params[0].split(".")
