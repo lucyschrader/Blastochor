@@ -25,9 +25,6 @@ def update_settings():
 
     if not config.get("mapping_file"):
     	config["mapping_file"] = "defaultmap.yaml"
-
-    if not config.get("corefile"):
-        config["corefile"] = "default"
     
     if not config.get("output_dir"):
         print("Output directory needed to write files")
@@ -54,6 +51,8 @@ def update_settings():
 
     if not config.get("query"):
         config["query"] == "*"
+
+    config["record_memo"] = {}
 
 def populate_skiplist():
     config["skiplist"] = []
@@ -92,6 +91,29 @@ def set_filters():
         kw_values = kw_values.split(", ")
         for i in range(0, len(kw_fields)):
             config["filters"].append({"field": kw_fields[i], "keyword": kw_values[i]})
+
+# Memo functions
+def add_to_record_memo(status=None, irn=None, endpoint=None, label=None, extension=None, extends=None):
+    pid = "tepapa:collection/{e}/{i}".format(e=endpoint, i=irn)
+    if status == None:
+        status = "pending"
+    if extension == None:
+        extension = False
+
+    config["record_memo"][pid] = {
+        "status": status,
+        "irn": irn,
+        "endpoint": endpoint,
+        "pid": pid,
+        "write_to": [],
+        "structure": {},
+        "is_extension": extension,
+        "media_irns": []
+    }
+
+    if label:
+        config["record_memo"][pid]["write_to"].append(label)
+        config["record_memo"][pid]["structure"].update({label: {"write": True, "extends": []}})
 
 class InputList():
     def __init__(self, source_file):

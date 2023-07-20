@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 
+from tqdm import tqdm
+
 from blastochor.settings.Settings import config
-from blastochor.settings.Stats import stats, ProgressBar
+from blastochor.settings.Stats import stats
 import blastochor.util.Processor as processor
 from blastochor.util.Records import records
 from blastochor.util import Writer
@@ -38,35 +40,29 @@ class Output():
     def create_rows(self):
         # Processes each included record to get printable values
         # Appends to self.rows list before writing all records
-        output_records = []
-        for record in records.records:
-            if record.structure.get(self.label).get("write") == True:
-                output_records.append(record)
+        output_record_pids = [i for i in config["record_memo"] if self.label in config["record_memo"][i]["write_to"]]
 
         if not config.get("quiet"):
-            print("Writing {} records to file".format(len(list(output_records))))
+            print("Writing {} records to file".format(len(list(output_record_pids))))
 
-        for record in output_records:
+        for record_pid in output_record_pids:
+            record = records.records[record_pid]
             # Checks if the record's rows need to point to another record
-            pointers = record.structure.get(self.label).get("pointers")
-
-            if not config.get("quiet"):
-                print("{r} has pointers: {p}".format(r=record.pid, p=pointers))
+            pointers = config["record_memo"][record_pid]["structure"][self.label]["extends"]
 
             if len(pointers) > 0:
+                if not config.get("quiet"):
+                    print("{r} has pointers: {p}".format(r=record_pid, p=pointers))
+
                 for pointer in pointers:
                     self.chop_up_record(record, pointer)
             else:
                 self.chop_up_record(record)
 
         print("Processing values")
-        progress = ProgressBar(length=len(self.rows))
-        progress_counter = 0
-        for output_row in self.rows:
-            processor.RowProcessor(self.rules, output_row)
 
-            progress_counter += 1
-            progress.update(progress_counter)
+        for output_row in tqdm(self.rows, desc="Working: "):
+            processor.RowProcessor(self.rules, output_row)
 
     def chop_up_record(self, record=None, pointer=None):
         kwargs = {}
@@ -81,11 +77,11 @@ class Output():
 
         # Removes images not being written out if only some selected
         if config.get("mode") == "list":
-            irn_object = next(filter(lambda input_irn: input_irn.irn == record.data.get("id"), config.get("irn_list")), None)
-            if irn_object:
+            memo_record = config["record_memo"][record.pid]
+            if memo_record:
                 # TODO: Check if record has no images and raise error if not
-                if len(irn_object.media) < len(record.data.get("hasRepresentation")):
-                    record.data = self.remove_nonwriting_images(irn_object, record.data)
+                if len(memo_record.media_irns) < len(record.data.get("hasRepresentation")):
+                    record.data = self.remove_nonwriting_images(memo_record, record.data)
 
         # Cuts down the record to a subset if needed
         if self.reduce_on:
@@ -166,11 +162,11 @@ class Output():
             if not config.get("quiet"):
                 print("Record {p} has no data for {l} output".format(p=record.pid, l=self.label))
 
-    def remove_nonwriting_images(self, irn_object, record_data):
+    def remove_nonwriting_images(self, memo_record, record_data):
         # When only writing out specific images, remove any other images from the source data
         has_rep_section = record_data.get("hasRepresentation")
 
-        new_has_rep_section = [sec for sec in has_rep_section if sec.get("id") in irn_object.media]
+        new_has_rep_section = [sec for sec in has_rep_section if sec.get("id") in memo_record.media_irns]
 
         record_data["hasRepresentation"] = new_has_rep_section
 

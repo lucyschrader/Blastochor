@@ -326,8 +326,8 @@ def related(data, size, types):
         endpoint=endpoint,
         irn=irn,
         related=True,
-        size=kwargs.get("size"),
-        types=kwargs.get("types"))
+        size=size,
+        types=types)
 
     query.send_query()
     stats.api_call_count += 1
@@ -435,11 +435,16 @@ class ValueProcessor():
         self.output_row = output_row
         self.this_value = None
         self.reprocess = False
+        self.complete = False
 
         for function in self.rule.mapping_functions:
-            processed_function = self.unpack_function(function=function)
-            self.this_value = processed_function.output_value
-            self.reprocess = processed_function.reprocess
+            if self.complete == False:
+                processed_function = self.unpack_function(function=function)
+                self.this_value = processed_function.output_value
+                self.reprocess = processed_function.reprocess
+                self.complete = processed_function.complete
+
+        self.complete = True
 
     def unpack_function(self, function=None):
         function_name = list(function.keys())[0]
@@ -464,6 +469,7 @@ class FunctionProcessor():
 
         self.output_value = None
         self.reprocess = True
+        self.complete = False
 
         self.value_index = value_index
 
@@ -471,6 +477,16 @@ class FunctionProcessor():
 
     def select_function(self):
         match self.function:
+
+            case "continue_if":
+                for constraint in self.params:
+                    for constraint_path in constraint.keys():
+                        constraint_value = constraint[constraint_path]
+                        if literal(data=self.input_value, path=constraint_path.split(".")) != constraint_value:
+                            self.reprocess = False
+                            self.complete = True
+                        else:
+                            self.reprocess = False
 
             case "for_each":
                 if isinstance(self.input_value, list):
@@ -485,8 +501,6 @@ class FunctionProcessor():
 
                         self.output_value.append(value)
                         value_index += 1
-
-                        #print("Post-subfunction value: {}".format(self.output_value))
 
             case "fallback":
                 if self.input_value is not None or (self.input_value == 0):

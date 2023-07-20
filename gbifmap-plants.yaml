@@ -242,6 +242,8 @@
       - literal:
         - atLocation.maximumDistanceAboveSurfaceInMeters
     - decimalLatitude:
+      - continue_if:
+        - restrictLocalityData: false
       - literal:
         - evidenceFor.atEvent.id
       - lookup:
@@ -249,6 +251,8 @@
       - collate_list:
         - atLocation.mappingDetails.i.decimalLatitude
     - decimalLongitude:
+      - continue_if:
+        - restrictLocalityData: false
       - literal:
         - evidenceFor.atEvent.id
       - lookup:
@@ -256,6 +260,8 @@
       - collate_list:
         - atLocation.mappingDetails.i.decimalLongitude
     - geodeticDatum:
+      - continue_if:
+        - restrictLocalityData: false
       - literal:
         - evidenceFor.atEvent.id
       - lookup:
@@ -514,6 +520,7 @@
   extend: null
   requires:
     hasRepresentation.i.rights.allowsDownload: true
+    restrictLocalityData: false
   fields:
     - type:
       - literal:

@@ -4,8 +4,7 @@
 
 # Setup
 api_key_env: TE-PAPA-KEY
-mapping_file: gbifmap-plants.yaml
-corefile: core
+mapping_file: _work_maps/_work_unsplash_build.yaml
 input_dir: input_files
 output_dir: output_files
 use_skiplist: False
@@ -25,6 +24,10 @@ ungrouped_fields:
   include: null
   fields: null
 
+# Profiler
+profiler_on: false
+profiler_filename: null
+
 # Run
 mode: scroll
 quiet: true
@@ -40,11 +43,11 @@ list_source: null
 max_records: 1000
 size: 1000
 
-query: "*"
+query: "sarah featon"
 sort: -_meta.modified
 
 filter:
-  collection: Plants
-  allows_download: null
+  collection: Art
+  allows_download: true
   keyword_fields: null
   keyword_values: null

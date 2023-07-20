@@ -4,7 +4,7 @@ from blastochor.settings.Settings import config, InputList
 from blastochor.settings.Stats import stats
 from blastochor.util import Mapper, Harvester, Records
 
-if __name__ == '__main__':
+def blasto():
     print("blastochor blasting")
 
     stats.start()
@@ -22,3 +22,16 @@ if __name__ == '__main__':
 
     stats.end()
     stats.print_stats()
+
+if __name__ == '__main__':
+    if config["profiler_on"]:
+        import cProfile, pstats
+        profiler = cProfile.Profile()
+        profiler.enable()
+        blasto()
+        profiler.disable()
+        stats = pstats.Stats(profiler)
+        stats.strip_dirs()
+        stats.dump_stats(config["profiler_filename"])
+    else:
+        blasto()

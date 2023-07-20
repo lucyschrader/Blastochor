@@ -4,10 +4,11 @@ import os
 import json
 from math import ceil
 import time
+from tqdm import tqdm
 from askCO import Search, Scroll, Resource
 
-from blastochor.settings.Settings import config
-from blastochor.settings.Stats import stats, ProgressBar
+from blastochor.settings.Settings import config, add_to_record_memo
+from blastochor.settings.Stats import stats
 from blastochor.util.ApiRecord import ApiRecord
 from blastochor.util.Mapper import mapping
 import blastochor.util.Processor as processor
@@ -121,21 +122,41 @@ class Harvester():
             stats.api_call_count += ceil(scroll.record_count / size) + 1
 
             if scroll.record_count > 0:
-                for record in scroll.records:
-                    this_record = records.find_record(endpoint=endpoint, irn=record.get("id"))
-                    if not this_record:
-                        new_record = ApiRecord(data=record, endpoint=endpoint)
-                        records.append(new_record)
-                        self.check_for_triggers(new_record)
+                print("Saving scrolled records")
+                for record in tqdm(scroll.records, desc="Working: "):
+                    self.save_record(record=record, endpoint=endpoint, label=config["corefile"])
 
         stats.end_harvest()
 
-        if len(self.reharvest_list) > 0:
-            self.run_reharvests()
+        extension_list = [config["record_memo"][i] for i in config["record_memo"] if config["record_memo"][i]["is_extension"] == True]
+
+        if len(extension_list) > 0:
+            self.run_extension_harvest(extension_list)
 
         stats.end_extrarecords()
 
         print("All records saved")
+
+    def save_record(self, record, endpoint, label):
+        if self.update_memo_from_harvest(record=record, endpoint=endpoint, label=label):
+            new_record = ApiRecord(data=record, endpoint=endpoint)
+            records.append(new_record)
+            if label == config["corefile"]:
+                self.check_for_triggers(new_record)
+
+    # Check if record is already in memo/saved and update as needed
+    def update_memo_from_harvest(self, record, endpoint, label):
+        pid = record.get("pid")
+        if pid in config["record_memo"]:
+            current_status = config["record_memo"][pid]["status"]
+            if current_status == "received":
+                return False
+            elif current_status == "pending":
+                config["record_memo"][pid]["status"] = "received"
+                return True
+        else:
+            add_to_record_memo(status="received", irn=record.get("id"), endpoint=endpoint, label=label)
+            return True
 
     def harvest_from_list(self, endpoint=None):
         # Tell AskCO which records to query
@@ -147,13 +168,11 @@ class Harvester():
             endpoint = config.get("endpoint")
 
         print("Retrieving records from list")
-        progress = ProgressBar(stats.list_count)
-        progress_counter = 0
 
         irn_batch = HarvestBatch(endpoint=endpoint)
 
         # Segment list into batches of 250 and run a search for each batch
-        for irn_object in irn_list:
+        for irn_object in tqdm(irn_list, desc="Working: "):
             irn_formatted = "(id:{})".format(irn_object.irn)
             if irn_formatted not in irn_batch.irns:
                 irn_batch.irns.append(irn_formatted)
@@ -169,9 +188,6 @@ class Harvester():
 
                 irn_batch.irns = []
 
-            progress_counter += 1
-            progress.update(progress_counter)
-
         # Search for any remaining IRNs
         if len(irn_batch.irns) > 0:
             batch_records = self.batch_search(irn_batch=irn_batch.irns, endpoint=endpoint)
@@ -184,8 +200,8 @@ class Harvester():
 
         stats.end_harvest()
 
-        if len(self.reharvest_list) > 0:
-            self.run_reharvests()
+        if len(extension_list) > 0:
+            self.run_extension_harvest(extension_list)
 
         stats.end_extrarecords()
 
@@ -218,14 +234,14 @@ class Harvester():
             return new_record
         return None
 
-    def check_for_triggers(self, new_record):
-        # Review a harvested record against mapping to see what extra records need to be grabbed
+    def check_for_triggers(self, record):
+        # Review a harvested record against mapping to see what extension records need to be grabbed
         for trigger in mapping.reharvest_triggers:
-            if trigger.parent_endpoint == new_record.endpoint:
-                self.run_reharvest_trigger(record=new_record, trigger=trigger)
+            if trigger.parent_endpoint == record.endpoint:
+                self.run_extension_trigger(record=record, trigger=trigger)
 
-    def run_reharvest_trigger(self, record, trigger):
-        # Find all endpoints/irns for extension records, pull from saved scrolls, and add to records
+    def run_extension_trigger(self, record, trigger):
+        # Find all endpoints/irns for extension records and add to memo
         # Applies a label if the new record should be written out
         # Label is None if the new record is just for a lookup function
         trigger_path = trigger.harvest_path.split(".")
@@ -233,81 +249,69 @@ class Harvester():
             extension_irns = processor.collate_list(record.data, path=trigger_path)
             if extension_irns:
                 extension_irns = [i for i in extension_irns if i is not None]
-                for irn in extension_irns:
-                    self.reharvest_list.append({"irn": irn, "endpoint": trigger.harvest_endpoint, "label": trigger.label, "related_record_pid": record.pid})
+                for extension_irn in extension_irns:
+                    self.save_extension_details(irn=extension_irn, record=record, trigger=trigger)
+
         else:
             extension_irn = processor.literal(record.data, path=trigger_path)
             if extension_irn:
-                self.reharvest_list.append({"irn": extension_irn, "endpoint": trigger.harvest_endpoint, "label": trigger.label, "related_record_pid": record.pid})
+                self.save_extension_details(irn=extension_irn, record=record, trigger=trigger)
 
-    def run_reharvests(self):
+    def save_extension_details(self, irn, record, trigger):
+        extension_pid = "tepapa:collection/{e}/{i}".format(e=trigger.harvest_endpoint, i=irn)
+
+        # Check if record is already in memo
+        if config["record_memo"].get(extension_pid):
+            # If so, add new label if record will be written out
+            if trigger.label:
+                if trigger.label not in config["record_memo"][extension_pid]["write_to"]:
+                    config["record_memo"][extension_pid]["write_to"].append(trigger.label)
+                    config["record_memo"][extension_pid]["structure"].update({trigger.label: {"write": True, "extends": [record.pid]}})
+                else:
+                    if record.pid not in config["record_memo"][extension_pid]["structure"][trigger.label]["extends"]:
+                        config["record_memo"][extension_pid]["structure"][trigger.label]["extends"].append(record.pid)
+        else:
+            # Otherwise add to memo
+            add_to_record_memo(status="pending", irn=irn, endpoint=trigger.harvest_endpoint, extension=True, label=trigger.label, extends=record.pid)
+
+    def run_extension_harvest(self, extension_list):
         # Work through list of triggered queries to pull down extra records
         print("Running extra queries")
-        progress = ProgressBar(length=len(self.reharvest_list))
-        progress_counter = 0
 
         # Split up records by endpoint to allow searching just by IRN
-        queries_by_endpoint = []
+        queries_by_endpoint = {"agent": [], "fieldcollection": [], "object": [], "place": [], "taxon": []}
 
-        # Set up buckets for each endpoint
-        for e in ["agent", "fieldcollection", "object", "place", "taxon"]:
-            queries_by_endpoint.append(HarvestBatch(endpoint=e))
-        
-        # Run through the list of needed records
-        for record_trigger in self.reharvest_list:
-            endpoint = record_trigger["endpoint"]
-            irn = record_trigger["irn"]
-            label = record_trigger["label"]
-            related_record_pid = record_trigger["related_record_pid"]
-            this_record = records.find_record(endpoint=endpoint, irn=irn)
-            if not this_record:
-                # Format a segment of the search query and store it to run a batch search
-                this_endpoint_queries = next(filter(lambda queries: queries.endpoint == endpoint, queries_by_endpoint), None)
+        for pending_record in tqdm(extension_list, desc="Working: "):
+            endpoint = pending_record["endpoint"]
+            irn = pending_record["irn"]
 
-                irn_formatted = "(id:{})".format(irn)
+            # Format a segment of the search query and store it to run a batch search
+            irn_formatted = "(id:{})".format(irn)
 
-                if irn_formatted not in this_endpoint_queries.irns:
-                    this_endpoint_queries.irns.append(irn_formatted)
-                
-                # Run whenever there's 250 IRNs saved for an endpoint
-                if len(this_endpoint_queries.irns) == 250:
-                    reharvest_batch = self.batch_search(irn_batch=this_endpoint_queries.irns, endpoint=endpoint)
-                    self.save_reharvest_records(reharvest_results=reharvest_batch.records, reharvest_endpoint=endpoint)
-                    this_endpoint_queries.irns = []
+            if irn_formatted not in queries_by_endpoint[endpoint]:
+                queries_by_endpoint[endpoint].append(irn_formatted)
 
-            else:
-                if label:
-                    this_record.relate_record(label=label, related_record_pid=related_record_pid)
-
-            progress_counter += 1
-            progress.update(progress_counter)
+            # Run whenever there's 250 IRNs saved for an endpoint
+            if len(queries_by_endpoint[endpoint]) == 250:
+                extension_batch = self.batch_search(irn_batch=queries_by_endpoint[endpoint], endpoint=endpoint)
+                self.save_extension_records(extension_results=extension_batch.records, extension_endpoint=endpoint)
+                queries_by_endpoint[endpoint] = []
 
         # Run searches for remaining records
-        for this_endpoint_queries in queries_by_endpoint:
-            if len(this_endpoint_queries.irns) > 0:
-                reharvest_batch = self.batch_search(irn_batch=this_endpoint_queries.irns, endpoint=this_endpoint_queries.endpoint)
-                self.save_reharvest_records(reharvest_results=reharvest_batch.records, reharvest_endpoint=this_endpoint_queries.endpoint)
+        for endpoint in queries_by_endpoint.keys():
+            if len(queries_by_endpoint[endpoint]) > 0:
+                extension_batch = self.batch_search(irn_batch=queries_by_endpoint[endpoint], endpoint=endpoint)
+                self.save_extension_records(extension_results=extension_batch.records, extension_endpoint=endpoint)
 
-    def save_reharvest_records(self, reharvest_results, reharvest_endpoint):
-        for record in reharvest_results:
-            record_trigger = next(filter(lambda record_trigger: (record_trigger.get("irn") == record.get("id")) and (record_trigger.get("endpoint") == reharvest_endpoint), self.reharvest_list), None)
+    def save_extension_records(self, extension_results, extension_endpoint):
+        for record in extension_results:
+            pid = record.get("pid")
+            if config["record_memo"][pid]["status"] == "pending":
+                extension_record = ApiRecord(data=record, endpoint=extension_endpoint)
+                records.append(extension_record)
 
-            # Get the extra details of the trigger to allow saving the record and any extra labels
-            if record_trigger:
-                endpoint = record_trigger["endpoint"]
-                irn = record_trigger["irn"]
-                label = record_trigger["label"]
-                related_record_pid = record_trigger["related_record_pid"]
-
-                this_record = records.find_record(endpoint=endpoint, irn=irn)
-                if not this_record:
-                    extension_record = ApiRecord(data=record, endpoint=endpoint)
-                    records.append(extension_record)
-
-                    stats.extension_records_count += 1
-
-                    if label:
-                        extension_record.relate_record(label=label, related_record_pid=related_record_pid)
+                config["record_memo"][pid]["status"] = "received"
+                stats.extension_records_count += 1
 
 class HarvestBatch():
     def __init__(self, endpoint):

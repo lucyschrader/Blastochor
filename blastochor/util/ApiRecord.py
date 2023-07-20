@@ -17,7 +17,7 @@ class ApiRecord():
 
         self.check_quality_score()
 
-        self.make_writable()
+#        self.make_writable()
 
         if not config.get("quiet"):
             print("Record created: {e}, {i}".format(e=self.endpoint, i=self.irn))
@@ -42,13 +42,13 @@ class ApiRecord():
         for output in mapping.outputs:
             label = output.label
             if output.endpoint == self.endpoint:
-                self.structure.update({label: {"write": True, "pointers": []}})
+                config["record_memo"][self.pid]["structure"].update({label: {"write": True, "extension_of": []}})
 
                 if not config.get("quiet"):
                     print("Record {p} will write to {l}".format(p=self.pid, l=label))
 
             else:
-                self.structure.update({label: {"write": False, "pointers": None}})
+                config["record_memo"][self.pid]["structure"].update({label: {"write": False, "extension_of": None}})
 
     def relate_record(self, label, related_record_pid):
         # Associates this record with another ApiRecord using its pid

@@ -27,6 +27,11 @@ class Mapping():
 
         for output_map in map:
             label = output_map.get("label")
+
+            # Set the label of the first output as the corefile
+            if not config.get("corefile"):
+                config["corefile"] = label
+            
             reference_column = output_map.get("reference_column")
             endpoint = output_map.get("primary_endpoint")
             explode_on = output_map.get("explode")

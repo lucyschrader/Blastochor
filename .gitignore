@@ -12,6 +12,7 @@ __pycache__/
 
 # Working files
 /_work*
+*.prof
 
 # Input and output files
 input_files/
