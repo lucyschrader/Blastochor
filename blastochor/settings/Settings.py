@@ -93,8 +93,19 @@ def set_filters():
             config["filters"].append({"field": kw_fields[i], "keyword": kw_values[i]})
 
 # Memo functions
+def format_pid(endpoint=None, irn=None):
+    if irn:
+        return "tepapa:collection/{e}/{i}".format(e=endpoint, i=irn)
+    else:
+        return None
+
+def check_memo_for_pid(pid):
+    record_memo = config["record_memo"].get(pid)
+    return record_memo
+
 def add_to_record_memo(status=None, irn=None, endpoint=None, label=None, extension=None, extends=None):
-    pid = "tepapa:collection/{e}/{i}".format(e=endpoint, i=irn)
+    pid = format_pid(endpoint=endpoint, irn=irn)
+
     if status == None:
         status = "pending"
     if extension == None:
@@ -115,10 +126,15 @@ def add_to_record_memo(status=None, irn=None, endpoint=None, label=None, extensi
         config["record_memo"][pid]["write_to"].append(label)
         config["record_memo"][pid]["structure"].update({label: {"write": True, "extends": []}})
 
+    return pid
+
 class InputList():
     def __init__(self, source_file):
         source_data = None
         irn_list = []
+
+        endpoint = config.get("endpoint")
+        label = config.get("corefile")
 
         if source_file.endswith(".csv"):
             with open(source_file, newline="", encoding="utf-8") as f:
@@ -131,18 +147,14 @@ class InputList():
                         if self.skip_check(this_irn) == True:
                             break
 
-                    this_irn_object = next(filter(lambda input_irn: input_irn.irn == this_irn, irn_list), None)
-                    if not this_irn_object:
-                        this_irn_object = InputIRN(irn=this_irn)
-                        if this_media_irn:
-                            this_irn_object.media.append(this_media_irn)
-                        else:
-                            # Harvest all images if no media IRN has been specified in source
-                            this_irn_object.harvest_all = True
-                        irn_list.append(this_irn_object)
-                    else:
-                        if this_media_irn:
-                            this_irn_object.media.append(this_media_irn)
+                    this_pid = "tepapa:collection/{e}/{i}".format(e=endpoint, i=this_irn)
+                    if not config["record_memo"].get(this_pid):
+                        add_to_record_memo(status="pending", irn=this_irn, endpoint=endpoint, label=label)
+
+                    if this_media_irn:
+                        memo_record = config["record_memo"][this_pid]
+                        if this_media_irn not in memo_record["media_irns"]:
+                            memo_record["media_irns"].append(this_media_irn)
 
         elif source_file.endswith(".txt"):
             with open(source_file, "r", encoding="utf-8") as f:
@@ -153,23 +165,16 @@ class InputList():
                     if config.get("use_skipfile") == True:
                         if self.skip_check(this_irn) == True:
                             break
-                    this_irn_object = next(filter(lambda input_irn: input_irn.irn == this_irn, irn_list), None)
-                    if not this_irn_object:
-                        this_irn_object = InputIRN(irn=irn)
-                        irn_list.append(this_irn_object)
 
-        config["irn_list"] = irn_list
+                    this_pid = "tepapa:collection/{e}/{i}".format(e=endpoint, i=this_irn)
+                    if not config["record_memo"].get(this_pid):
+                        add_to_record_memo(status="pending", irn=this_irn, endpoint=endpoint, label=label)
         
     def skip_check(self, irn):
         if irn in config.get("skiplist"):
             return True
         
         return False
-
-class InputIRN():
-    def __init__(self, irn=None):
-        self.irn = irn
-        self.media = []
 
 config = read_config()
 update_settings()

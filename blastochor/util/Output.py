@@ -33,9 +33,45 @@ class Output():
             header_row.insert(0, self.reference_column)
         csv.write_header_row(header_row)
 
+        if config["restrict_locality"] and self.endpoint == "object":
+            self.remove_restricted_localities()
+
         self.create_rows()
 
         csv.write_records(self.rows, self.fieldnames)
+
+    def remove_restricted_localities(self):
+        # Get list of all event records with restricted locality
+        if not config.get("localities_removed"):
+            restricted_events = [i for i in config["record_memo"] if config["record_memo"][i].get("restrict_locality")]
+            for event_pid in restricted_events:
+                self.remove_event_coordinates(event_pid)
+                self.remove_object_locality(event_pid)
+
+            if not config.get("quiet"):
+                print("Locality information removed from restricted specimens")
+            config["localities_removed"] = True
+
+    def remove_event_coordinates(self, event_pid):
+        # Remove decimal latitude, longitude, and datum from mappingDetails
+        loc_data = records.records[event_pid].data.get("atLocation")
+        if loc_data:
+            try:
+                mapping_data = loc_data["mappingDetails"][0]
+            except (KeyError, IndexError):
+                mapping_data = None
+
+        if mapping_data:
+            records.records[event_pid].data["atLocation"]["mappingDetails"][0]["decimalLatitude"] = None
+            records.records[event_pid].data["atLocation"]["mappingDetails"][0]["decimalLongitude"] = None
+            records.records[event_pid].data["atLocation"]["mappingDetails"][0]["geodeticDatum"] = None
+
+    def remove_object_locality(self, event_pid):
+        # Remove locality from objects associated with restricted events
+        object_records = [i for i in config["record_memo"] if config["record_memo"][i].get("associated_event") == event_pid]
+        if len(object_records) > 0:
+            for record_pid in object_records:
+                records.records[record_pid].data["evidenceFor"]["atEvent"]["atLocation"]["locality"] = None
 
     def create_rows(self):
         # Processes each included record to get printable values
@@ -77,10 +113,13 @@ class Output():
 
         # Removes images not being written out if only some selected
         if config.get("mode") == "list":
-            memo_record = config["record_memo"][record.pid]
+            memo_record = config["record_memo"].get(record.pid)
             if memo_record:
-                # TODO: Check if record has no images and raise error if not
-                if len(memo_record.media_irns) < len(record.data.get("hasRepresentation")):
+                # If there are no media irns in the memo, process data for all images
+                if len(memo_record["media_irns"]) == 0:
+                    pass
+                # Otherwise, edit the record to remove unwanted image data
+                elif len(memo_record["media_irns"]) < len(record.data.get("hasRepresentation")):
                     record.data = self.remove_nonwriting_images(memo_record, record.data)
 
         # Cuts down the record to a subset if needed
@@ -166,7 +205,7 @@ class Output():
         # When only writing out specific images, remove any other images from the source data
         has_rep_section = record_data.get("hasRepresentation")
 
-        new_has_rep_section = [sec for sec in has_rep_section if sec.get("id") in memo_record.media_irns]
+        new_has_rep_section = [sec for sec in has_rep_section if sec.get("id") in memo_record["media_irns"]]
 
         record_data["hasRepresentation"] = new_has_rep_section
 

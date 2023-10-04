@@ -161,8 +161,7 @@ class Harvester():
     def harvest_from_list(self, endpoint=None):
         # Tell AskCO which records to query
         # Get records into Records object
-        irn_list = config.get("irn_list")
-        stats.list_count = len(irn_list)
+        stats.list_count = len(config.get("record_memo"))
 
         if endpoint == None:
             endpoint = config.get("endpoint")
@@ -172,8 +171,11 @@ class Harvester():
         irn_batch = HarvestBatch(endpoint=endpoint)
 
         # Segment list into batches of 250 and run a search for each batch
-        for irn_object in tqdm(irn_list, desc="Working: "):
-            irn_formatted = "(id:{})".format(irn_object.irn)
+        for pid in tqdm(config.get("record_memo").keys(), desc="Working: "):
+            memo_record = config.get("record_memo").get(pid)
+            
+            irn_formatted = "(id:{})".format(memo_record["irn"])
+            
             if irn_formatted not in irn_batch.irns:
                 irn_batch.irns.append(irn_formatted)
 
@@ -181,10 +183,8 @@ class Harvester():
                 batch_records = self.batch_search(irn_batch.irns, endpoint)
 
                 if len(batch_records.records) > 0:
-                    for record in batch_records.records:
-                        new_record = ApiRecord(data=record, endpoint=endpoint)
-                        records.append(new_record)
-                        self.check_for_triggers(new_record)
+                    for record in tqdm(batch_records.records, desc="Working: "):
+                        self.save_record(record=record, endpoint=endpoint, label=config["corefile"])
 
                 irn_batch.irns = []
 
@@ -193,12 +193,12 @@ class Harvester():
             batch_records = self.batch_search(irn_batch=irn_batch.irns, endpoint=endpoint)
 
             if len(batch_records.records) > 0:
-                for record in batch_records.records:
-                    new_record = ApiRecord(data=record, endpoint=endpoint)
-                    records.append(new_record)
-                    self.check_for_triggers(new_record)
+                for record in tqdm(batch_records.records, desc="Working: "):
+                    self.save_record(record=record, endpoint=endpoint, label=config["corefile"])
 
         stats.end_harvest()
+
+        extension_list = [config["record_memo"][i] for i in config["record_memo"] if config["record_memo"][i]["is_extension"] == True]
 
         if len(extension_list) > 0:
             self.run_extension_harvest(extension_list)
@@ -306,6 +306,7 @@ class Harvester():
     def save_extension_records(self, extension_results, extension_endpoint):
         for record in extension_results:
             pid = record.get("pid")
+            
             if config["record_memo"][pid]["status"] == "pending":
                 extension_record = ApiRecord(data=record, endpoint=extension_endpoint)
                 records.append(extension_record)

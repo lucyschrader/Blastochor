@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import json
-from blastochor.settings.Settings import config
+from blastochor.settings.Settings import config, add_to_record_memo, format_pid
 from blastochor.settings.Stats import stats
 from blastochor.util.Mapper import mapping
 from blastochor.util.Records import records
@@ -18,6 +18,9 @@ class ApiRecord():
         self.check_quality_score()
 
 #        self.make_writable()
+
+        if config.get("restrict_locality"):
+            self.check_locality_restriction()
 
         if not config.get("quiet"):
             print("Record created: {e}, {i}".format(e=self.endpoint, i=self.irn))
@@ -56,3 +59,19 @@ class ApiRecord():
 
         if not config.get("quiet"):
             print("Record {p} will point to record {r}".format(p=self.pid, r=related_record_pid))
+
+    def check_locality_restriction(self):
+        # If restrict_locality is on, find event records that need to be redacted
+        if self.endpoint == "object":
+            try:
+                event_id = self.data["evidenceFor"]["atEvent"]["id"]
+            except KeyError:
+                event_id = None
+
+            if event_id:
+                if self.data.get("restrictLocalityData"):
+                    event_pid = add_to_record_memo(status=None, irn=event_id, endpoint="fieldcollection", label=None, extension=True, extends=None)
+                    config["record_memo"][event_pid]["restrict_locality"] = True
+
+                event_pid = format_pid(endpoint="fieldcollection", irn=event_id)
+                config["record_memo"][self.pid]["associated_event"] = event_pid

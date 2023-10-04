@@ -29,8 +29,9 @@ class OutputCSV():
 
 	def write_this_record(self, record, fieldnames):
 		row = []
-		if record.pointer:
-			row.append(record.pointer)
+		if config.get("use_pointers"):
+			if record.pointer:
+				row.append(record.pointer)
 		for field in fieldnames:
 			value = record.values.get(field)
 			# If a value is still a list after processing, turn it into a string

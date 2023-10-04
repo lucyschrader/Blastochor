@@ -4,14 +4,17 @@
 
 # Setup
 api_key_env: TE-PAPA-KEY
-mapping_file: _work_maps/_work_unsplash_build.yaml
+mapping_file: gbifmap-plants.yaml
 input_dir: input_files
 output_dir: output_files
 use_skiplist: False
 skipfile: null
 min_image_size: 0
 max_list_size: 100
+use_pointers: false
 clean_newlines: true
+
+# Group rows
 group_rows: false
 parent_label: null
 parent_fields:
@@ -23,6 +26,9 @@ child_fields:
 ungrouped_fields:
   include: null
   fields: null
+
+# Sensitive data protection
+restrict_locality: true
 
 # Profiler
 profiler_on: false
@@ -40,14 +46,14 @@ attempts: 3
 list_source: null
 
 # Search/scroll mode settings
-max_records: 1000
+max_records: -1
 size: 1000
 
-query: "sarah featon"
+query: "urtica"
 sort: -_meta.modified
 
 filter:
-  collection: Art
-  allows_download: true
+  collection: Plants
+  allows_download: null
   keyword_fields: null
   keyword_values: null

@@ -183,6 +183,8 @@
       - literal:
         - evidenceFor.atEvent.atLocation.stateProvince
     - locality:
+      - continue_if:
+        - restrictLocalityData: false
       - literal:
         - evidenceFor.atEvent.atLocation.locality
     - verbatimElevation:
@@ -248,7 +250,7 @@
         - evidenceFor.atEvent.id
       - lookup:
         - fieldcollection
-      - collate_list:
+      - literal:
         - atLocation.mappingDetails.i.decimalLatitude
     - decimalLongitude:
       - continue_if:
@@ -257,7 +259,7 @@
         - evidenceFor.atEvent.id
       - lookup:
         - fieldcollection
-      - collate_list:
+      - literal:
         - atLocation.mappingDetails.i.decimalLongitude
     - geodeticDatum:
       - continue_if:
@@ -266,7 +268,7 @@
         - evidenceFor.atEvent.id
       - lookup:
         - fieldcollection
-      - collate_list:
+      - literal:
         - atLocation.mappingDetails.i.geodeticDatum
     - georeferenceSources:
       - literal:
