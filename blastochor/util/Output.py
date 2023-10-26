@@ -46,7 +46,11 @@ class Output():
             restricted_events = [i for i in config["record_memo"] if config["record_memo"][i].get("restrict_locality")]
             for event_pid in restricted_events:
                 self.remove_event_coordinates(event_pid)
-                self.remove_object_locality(event_pid)
+
+                restricted_objects = self.list_restricted_objects(event_pid)
+                if restricted_objects:
+                    self.remove_object_locality(restricted_objects)
+                    self.remove_object_images(restricted_objects)
 
             if not config.get("quiet"):
                 print("Locality information removed from restricted specimens")
@@ -62,16 +66,36 @@ class Output():
                 mapping_data = None
 
         if mapping_data:
+            if not config.get("quiet"):
+                print("Removing locality information from {}".format(event_pid))
             records.records[event_pid].data["atLocation"]["mappingDetails"][0]["decimalLatitude"] = None
             records.records[event_pid].data["atLocation"]["mappingDetails"][0]["decimalLongitude"] = None
             records.records[event_pid].data["atLocation"]["mappingDetails"][0]["geodeticDatum"] = None
 
-    def remove_object_locality(self, event_pid):
-        # Remove locality from objects associated with restricted events
+    def list_restricted_objects(self, event_pid):
+        # Create list of restricted objects from memo to allow redactions
         object_records = [i for i in config["record_memo"] if config["record_memo"][i].get("associated_event") == event_pid]
         if len(object_records) > 0:
-            for record_pid in object_records:
-                records.records[record_pid].data["evidenceFor"]["atEvent"]["atLocation"]["locality"] = None
+            return object_records
+        else:
+            return None
+
+    def remove_object_locality(self, restricted_objects):
+        # Remove locality from objects associated with restricted events
+        for record_pid in restricted_objects:
+            if not config.get("quiet"):
+                print("Removing locality information from related record {}".format(record_pid))
+            records.records[record_pid].data["evidenceFor"]["atEvent"]["atLocation"]["locality"] = None
+
+    def remove_object_images(self, restricted_objects):
+        # Remove images from objects associated with restricted events
+        # Keep images if they're of types
+        for record_pid in restricted_objects:
+            type_status = [i for i in processor.collate_list(records.records[record_pid].data, ["identification", "i", "typeStatus"]) if i]
+            if len(type_status) == 0:
+                if not config.get("quiet"):
+                    print("Removing images from related record {}".format(record_pid))
+                records.records[record_pid].data["hasRepresentation"] = None
 
     def create_rows(self):
         # Processes each included record to get printable values
@@ -110,6 +134,9 @@ class Output():
         kwargs["explode_ordinal"] = None
         kwargs["requires"] = self.requires
         kwargs["group_role"] = None
+
+        if self.reference_column:
+            kwargs["write_pointer"] = True
 
         # Removes images not being written out if only some selected
         if config.get("mode") == "list":
@@ -212,9 +239,10 @@ class Output():
         return record_data
 
 class OutputRow():
-    def __init__(self, data=None, pointer=None, explode_on=None, explode_ordinal=None, explode_parent_value=None, group_role=None, explode_child_fields=None, explode_parent_fields=None, requires=None, rules=None, record_pid=None):
+    def __init__(self, data=None, pointer=None, write_pointer=False, explode_on=None, explode_ordinal=None, explode_parent_value=None, group_role=None, explode_child_fields=None, explode_parent_fields=None, requires=None, rules=None, record_pid=None):
         self.data = data
         self.pointer = pointer
+        self.write_pointer = write_pointer
         self.explode_on = explode_on
         self.explode_ordinal = explode_ordinal
         self.explode_parent_value = explode_parent_value

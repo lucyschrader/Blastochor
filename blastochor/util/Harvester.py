@@ -314,6 +314,53 @@ class Harvester():
                 config["record_memo"][pid]["status"] = "received"
                 stats.extension_records_count += 1
 
+    def load_emu_data(self):
+        # Load EMu data from a csv
+        emu_data_file = config.get("emufile")
+        if emu_data_file:
+            with open("input_files/{}".format(emu_data_file), newline="", encoding="utf-8") as f:
+                emu_data = csv.DictReader(f, delimiter=",")
+            for row in emu_data:
+                self.read_emu_data(row)
+
+    def read_emu_data(self, row):
+        # Overwrite API values for this record with EMu data
+        event_pid = "tepapa:collections/event/{}".format(row["irn"])
+        dec_lat = row.get("decimalLatitude")
+        dec_long = row.get("decimalLongitude")
+        datum = row.get("geodeticDatum")
+        if datum:
+            datum = self.map_to_epsg(datum)
+
+        if config["record_memo"].get(event_pid):
+            self.update_saved_event(event_pid, dec_lat, dec_long, datum)
+
+    def map_to_epsg(self, datum, dec_long):
+        match datum:
+            case d if d.startswith("NZGD1949"):
+                return "EPSG:4272"
+
+            case d if d.startswith("UTM"):
+                # We still need to figure out if there's somewhere to put the UTM value
+                # Right now this just says a UTM value is NZGD1949
+                return "EPSG:4272"
+
+            case d if d.startswith("NZGD2000"):
+                # Unsure what the right code is yet
+                return "EPSG:"
+
+            case d if d.startswith("WGS84"):
+                return "WSG1984"
+
+            case "WGS1984":
+                return datum
+
+    def update_saved_event(self, event_pid, dec_lat, dec_long, datum):
+        # Replace existing values with EMu values
+        record.records[event_pid].data["mappingDetails"][0]["decimalLatitude"] = dec_lat
+        record.records[event_pid].data["mappingDetails"][0]["decimalLongitude"] = dec_long
+        record.records[event_pid].data["mappingDetails"][0]["geodeticDatum"] = datum
+
 class HarvestBatch():
     def __init__(self, endpoint):
         self.endpoint = endpoint

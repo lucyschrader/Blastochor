@@ -17,6 +17,11 @@ def blasto():
     else:
         harvester.complete_harvest(mode)
 
+    # (Hopefully) temporary workaround to some ETL coordinate transformation
+    if config.get("coordinate_workaround"):
+        from blastochor.util.CoordinateWorkaround import apply_coordinate_workaround
+        apply_coordinate_workaround()
+
     for output in Mapper.mapping.outputs:
         output.write_to_csv()
 

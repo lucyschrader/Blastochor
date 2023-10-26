@@ -11,8 +11,8 @@ use_skiplist: False
 skipfile: null
 min_image_size: 0
 max_list_size: 100
-use_pointers: false
 clean_newlines: true
+coordinate_workaround: true
 
 # Group rows
 group_rows: false
@@ -29,6 +29,9 @@ ungrouped_fields:
 
 # Sensitive data protection
 restrict_locality: true
+
+# Incorporate EMu data
+emufile: collectionevents.xml
 
 # Profiler
 profiler_on: false
@@ -49,7 +52,7 @@ list_source: null
 max_records: -1
 size: 1000
 
-query: "urtica"
+query: "*"
 sort: -_meta.modified
 
 filter:
