@@ -71,7 +71,7 @@ class ApiRecord():
 
             if event_id:
                 if self.data.get("restrictLocalityData"):
-                    event_pid = add_to_record_memo(status=None, irn=event_id, endpoint="fieldcollection", label=None, extension=True, extends=None)
+                    event_pid = add_to_record_memo(status=None, irn=event_id, endpoint="fieldcollection", label=None, extension=True)
                     memo[event_pid]["restrict_locality"] = True
 
                 event_pid = format_pid(endpoint="fieldcollection", irn=event_id)
