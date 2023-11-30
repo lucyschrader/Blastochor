@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from blastochor.settings.Settings import config
+from blastochor.settings.Settings import read_config
+
 
 class Records():
     def __init__(self):
@@ -18,7 +19,7 @@ class Records():
         # Find record with this endpoint, irn and return it
         this_record = next(filter(lambda record: record.endpoint == endpoint and record.irn == irn, self.records), None)
         if this_record is not None:
-            if not config.get("quiet"):
+            if not read_config("quiet"):
                 print("Record found: {e}, {i}".format(e=endpoint, i=irn))
             return this_record
 

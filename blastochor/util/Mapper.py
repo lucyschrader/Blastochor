@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 
 import yaml
-from blastochor.settings.Settings import config
+from blastochor.settings.Settings import read_config, write_config
 from blastochor.settings.Stats import stats
 from blastochor.util.Output import Output
 
+
 class Mapping():
     def __init__(self):
-        self.mapping_file = config.get("mapping_file")
+        self.mapping_file = read_config("mapping_file")
         self.mapping_rules = {}
         self.outputs = []
         self.ordered_fieldnames = {}
@@ -18,7 +19,7 @@ class Mapping():
     def load_map(self):
         # Read mapping from provided yaml document
 
-        if not config.get("quiet"):
+        if not read_config("quiet"):
             print("Reading mapping file...")
 
         map = None
@@ -29,8 +30,8 @@ class Mapping():
             label = output_map.get("label")
 
             # Set the label of the first output as the corefile
-            if not config.get("corefile"):
-                config["corefile"] = label
+            if not read_config("corefile"):
+                write_config("corefile", label)
             
             reference_column = output_map.get("reference_column")
             endpoint = output_map.get("primary_endpoint")
@@ -86,9 +87,9 @@ class MappingRule():
         self.mapping_functions = functions
 
         if self.endpoint == None:
-            self.endpoint = config.get("endpoint")
+            self.endpoint = read_config("endpoint")
 
-        if not config.get("quiet"):
+        if not read_config("quiet"):
             print("New mapping rule created for {e}, {o}".format(e=self.endpoint, o=self.output_fieldname))
 
 class ReharvestTrigger():
@@ -98,7 +99,5 @@ class ReharvestTrigger():
         self.harvest_endpoint = harvest_endpoint
         self.label = label
 
-        if not config.get("quiet"):
+        if not read_config("quiet"):
             print("New reharvest trigger created for {e}, {p}".format(e=self.harvest_endpoint, p=self.harvest_path))
-
-mapping = Mapping()

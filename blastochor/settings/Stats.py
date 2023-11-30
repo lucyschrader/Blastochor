@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from math import floor
-from blastochor.settings.Settings import config
+from blastochor.settings.Settings import read_config
 
 class AppStats():
 	def __init__(self):
@@ -65,9 +65,9 @@ class AppStats():
 		print("Script ran in {}".format(self.run_time))
 		print("Script made {} API calls".format(self.api_call_count))
 
-		if config.get("mode") == "search" or (config.get("mode") == "scroll"):
+		if read_config("mode") == "search" or (read_config("mode") == "scroll"):
 			print("Search returned {} results".format(self.search_result_count))
-		elif config.get("mode") == "list":
+		elif read_config("mode") == "list":
 			print("Source list contained {} records".format(self.list_count))
 		print("Harvesting ran in {}".format(self.harvest_time))
 

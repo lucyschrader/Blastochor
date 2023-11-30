@@ -2,7 +2,8 @@
 
 from tqdm import tqdm
 
-from blastochor.settings.Settings import config
+from blastochor.settings.Settings import read_config, write_config
+from blastochor.util.Memo import memo
 from blastochor.settings.Stats import stats
 import blastochor.util.Processor as processor
 from blastochor.util.Records import records
@@ -21,7 +22,7 @@ class Output():
 
         self.rows = []
 
-        if not config.get("quiet"):
+        if not read_config("quiet"):
             print("{} output object created".format(self.label))
 
     def write_to_csv(self):
@@ -33,7 +34,7 @@ class Output():
             header_row.insert(0, self.reference_column)
         csv.write_header_row(header_row)
 
-        if config["restrict_locality"] and self.endpoint == "object":
+        if read_config("restrict_locality") and self.endpoint == "object":
             self.remove_restricted_localities()
 
         self.create_rows()
@@ -42,8 +43,8 @@ class Output():
 
     def remove_restricted_localities(self):
         # Get list of all event records with restricted locality
-        if not config.get("localities_removed"):
-            restricted_events = [i for i in config["record_memo"] if config["record_memo"][i].get("restrict_locality")]
+        if not read_config("localities_removed"):
+            restricted_events = [i for i in memo if memo[i].get("restrict_locality")]
             for event_pid in restricted_events:
                 self.remove_event_coordinates(event_pid)
 
@@ -52,9 +53,9 @@ class Output():
                     self.remove_object_locality(restricted_objects)
                     self.remove_object_images(restricted_objects)
 
-            if not config.get("quiet"):
+            if not read_config("quiet"):
                 print("Locality information removed from restricted specimens")
-            config["localities_removed"] = True
+            write_config("localities_removed", True)
 
     def remove_event_coordinates(self, event_pid):
         # Remove decimal latitude, longitude, and datum from mappingDetails
@@ -66,7 +67,7 @@ class Output():
                 mapping_data = None
 
         if mapping_data:
-            if not config.get("quiet"):
+            if not read_config("quiet"):
                 print("Removing locality information from {}".format(event_pid))
             records.records[event_pid].data["atLocation"]["mappingDetails"][0]["decimalLatitude"] = None
             records.records[event_pid].data["atLocation"]["mappingDetails"][0]["decimalLongitude"] = None
@@ -74,7 +75,7 @@ class Output():
 
     def list_restricted_objects(self, event_pid):
         # Create list of restricted objects from memo to allow redactions
-        object_records = [i for i in config["record_memo"] if config["record_memo"][i].get("associated_event") == event_pid]
+        object_records = [i for i in memo if memo[i].get("associated_event") == event_pid]
         if len(object_records) > 0:
             return object_records
         else:
@@ -83,7 +84,7 @@ class Output():
     def remove_object_locality(self, restricted_objects):
         # Remove locality from objects associated with restricted events
         for record_pid in restricted_objects:
-            if not config.get("quiet"):
+            if not read_config("quiet"):
                 print("Removing locality information from related record {}".format(record_pid))
             records.records[record_pid].data["evidenceFor"]["atEvent"]["atLocation"]["locality"] = None
 
@@ -93,25 +94,25 @@ class Output():
         for record_pid in restricted_objects:
             type_status = [i for i in processor.collate_list(records.records[record_pid].data, ["identification", "i", "typeStatus"]) if i]
             if len(type_status) == 0:
-                if not config.get("quiet"):
+                if not read_config("quiet"):
                     print("Removing images from related record {}".format(record_pid))
                 records.records[record_pid].data["hasRepresentation"] = None
 
     def create_rows(self):
         # Processes each included record to get printable values
         # Appends to self.rows list before writing all records
-        output_record_pids = [i for i in config["record_memo"] if self.label in config["record_memo"][i]["write_to"]]
+        output_record_pids = [i for i in memo if self.label in memo[i]["write_to"]]
 
-        if not config.get("quiet"):
+        if not read_config("quiet"):
             print("Writing {} records to file".format(len(list(output_record_pids))))
 
         for record_pid in output_record_pids:
             record = records.records[record_pid]
             # Checks if the record's rows need to point to another record
-            pointers = config["record_memo"][record_pid]["structure"][self.label]["extends"]
+            pointers = memo[record_pid]["structure"][self.label]["extends"]
 
             if len(pointers) > 0:
-                if not config.get("quiet"):
+                if not read_config("quiet"):
                     print("{r} has pointers: {p}".format(r=record_pid, p=pointers))
 
                 for pointer in pointers:
@@ -139,8 +140,8 @@ class Output():
             kwargs["write_pointer"] = True
 
         # Removes images not being written out if only some selected
-        if config.get("mode") == "list":
-            memo_record = config["record_memo"].get(record.pid)
+        if read_config("mode") == "list":
+            memo_record = memo.get(record.pid)
             if memo_record:
                 # If there are no media irns in the memo, process data for all images
                 if len(memo_record["media_irns"]) == 0:
@@ -179,7 +180,7 @@ class Output():
                 # Runs if there are multiple rows to write out
                 if explode_size > 1:
                     # Runs if multiple rows should be grouped with a parent row
-                    if config.get("group_rows"):
+                    if read_config("group_rows"):
                         if explode_reduce == True:
                             kwargs["data"] = data[0]
                         else:
@@ -225,7 +226,7 @@ class Output():
                 self.rows.append(OutputRow(**kwargs))
 
         else:
-            if not config.get("quiet"):
+            if not read_config("quiet"):
                 print("Record {p} has no data for {l} output".format(p=record.pid, l=self.label))
 
     def remove_nonwriting_images(self, memo_record, record_data):

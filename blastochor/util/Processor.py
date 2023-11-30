@@ -8,7 +8,7 @@ import re
 import htmllaundry
 from askCO import Resource
 
-from blastochor.settings.Settings import config
+from blastochor.settings.Settings import read_config, write_config
 from blastochor.settings.Stats import stats
 from blastochor.util.Records import records
 
@@ -18,7 +18,7 @@ with open("blastochor/resources/iso_countrycodes.json") as f:
 def handle_iterator_in_path(path=None, ordinal=None):
     # Replace the list indicator 'i' in a path with a specified ordinal to create a navigable path
     # If no ordinal provided, defaults to first item in the list
-    if not config.get("quiet"):
+    if not read_config("quiet"):
         print("Path: {}".format(path))
 
     if isinstance(path, list):    
@@ -28,7 +28,7 @@ def handle_iterator_in_path(path=None, ordinal=None):
 
             path = ["ord:{}".format(str(ordinal)) if item == "i" else item for item in path]
 
-            if not config.get("quiet"):
+            if not read_config("quiet"):
                 print("Revised path: {}".format(path))
 
     return path
@@ -81,7 +81,7 @@ def collate_list(data, path):
     # Put a limit on the number of list items returned
     # Long lists (eg people referenced by a lot of narratives) can break the CSV cell limit
     iterator_limit = len(parent_data)
-    app_limit = config.get("max_list_size")
+    app_limit = read_config("max_list_size")
     if app_limit > 0 and app_limit < iterator_limit:
         iterator_limit = app_limit
 
@@ -208,7 +208,7 @@ def format_identification_qualifier(data, taxon_path, qualifier_path, ordinal):
                     elif qualifier in ["aff.", "cf."]:
                         return "{q} {n}".format(q=qualifier, n=name)
         else:
-            if not config.get("quiet"):
+            if not read_config("quiet"):
                 print("No record found for taxon record {}".format(taxon_id))
 
     return None
@@ -319,10 +319,11 @@ def related(data, size, types):
     irn = data.get("id")
 
     query = Resource(
-        quiet=config.get("quiet"),
-        api_key=config.get("api_key"),
-        timeout=config.get("timeout"),
-        attempts=config.get("attempts"),
+        quiet=read_config("quiet"),
+        api_key=read_config("api_key"),
+        timeout=read_config("timeout"),
+        attempts=read_config("attempts"),
+        sleep=0.1,
         endpoint=endpoint,
         irn=irn,
         related=True,
@@ -354,8 +355,6 @@ def truncate_value(data, string_length, suffix):
     else:
         return None
 
-def use_config(key):
-    return config.get(key)
 
 class RowProcessor():
     def __init__(self, rules, output_row):
@@ -392,19 +391,19 @@ class RowProcessor():
             self.this_value = None
             key = rule.output_fieldname
             # If grouping exploded rows, check if specific fields should be included/excluded
-            if config.get("group_rows"):
+            if read_config("group_rows"):
                 if self.output_row.group_role == "child":
-                    if self.include_field(key, config.get("child_fields")):
+                    if self.include_field(key, read_config("child_fields")):
                         self.this_value = ValueProcessor(rule=rule, output_row=self.output_row).this_value
                     else:
                         self.this_value = ""
                 elif self.output_row.group_role == "parent":
-                    if self.include_field(key, config.get("parent_fields")):
+                    if self.include_field(key, read_config("parent_fields")):
                         self.this_value = ValueProcessor(rule=rule, output_row=self.output_row).this_value
                     else:
                         self.this_value = ""
                 else:
-                    if self.include_field(key, config.get("ungrouped_fields")):
+                    if self.include_field(key, read_config("ungrouped_fields")):
                         self.this_value = ValueProcessor(rule=rule, output_row=self.output_row).this_value
                     else:
                         self.this_value = ""
@@ -450,7 +449,7 @@ class ValueProcessor():
         function_name = list(function.keys())[0]
         params = function.get(function_name)
         
-        if not config.get("quiet"):
+        if not read_config("quiet"):
             print("Running function: {}".format(function_name))
 
         return FunctionProcessor(function=function_name, params=params, input_value=self.this_value, output_row=self.output_row, reprocess=self.reprocess)
@@ -633,7 +632,7 @@ class FunctionProcessor():
             case "use_config":
                 # Special cases where part of the output file's metadata need to be called
                 key = params[0]
-                self.output_value = use_config(key)
+                self.output_value = read_config(key)
 
             case "use_group_labels":
                 label = None
@@ -649,7 +648,7 @@ class FunctionProcessor():
         function_name = list(function.keys())[0]
         params = function.get(function_name)
     
-        if not config.get("quiet"):
+        if not read_config("quiet"):
             print("Running function: {}".format(function_name))
 
         return FunctionProcessor(function=function_name, params=params, input_value=input_value, output_row=output_row, reprocess=reprocess, value_index=value_index)

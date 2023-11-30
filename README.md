@@ -22,17 +22,27 @@ This repo includes a basic mapping file that will be used if another is not prov
 Clone this repo using `git clone`. Install the following packages:
 - askCO
 - PyYAML
+- click
 
 Go to https://data.tepapa.govt.nz/docs/register.html and register for an API key. Add the API key to an environment variable called 'TE-PAPA-KEY'.
 
-If using a custom mapping, this should sit alongside Config.yml.
-
 ## Usage
-Edit the `Config.yml` file to set search and export parameters.
+Edit your config file to set search and export parameters. If creating your own, use `config.yaml` at the root level.
 
 The main functional setting is `search`, `scroll` or `list`. You can either send a search query, which will page through and return all relevant records (limit 50K), scroll through all records (no limit) or provide the app with a list of IRNs (internal reference numbers, Te Papa's record identifiers), which will be individually queried and returned.
 
+If using a custom mapping, you can put this wherever - just make sure `config.yaml` is pointing to it. You can also use `blastochor/projects/default.yaml` to get some general object information.
+
 When your config and mapping are ready, run the app with `python -m app`.
+
+## Command line parameters
+Blastochor can be set up with projects using a pre-defined config and mapping file. Put the config file in `projects` with the name `[projectname]_config.yaml` and the mapfile (set the name in the config file) in `resources/mapfiles`.
+
+To run a project, enter `python -m app --project=[projectname]`.
+
+You can also set a limit on how many records to retrieve, outside what's in your config file - great for testing. Enter `python -m app --limit=[number]`. If search or scroll are set up to get more records (eg you ask for 100 but scroll is set up to get 1000 at a time), you'll get the larger number.
+
+Use both by stringing them together: `python -m app --project=[projectname] --limit=[number]`.
 
 ### Setup
 `api_key_env`: Environment name for your unique API key. Default is `TE-PAPA-KEY`
@@ -62,7 +72,7 @@ When your config and mapping are ready, run the app with `python -m app`.
 ### Run
 `mode`: Set to search or list. Default is `search`
 
-`quiet`: Set to `false` if you want progress messages written to the CLI. Default is `true`
+`quiet`: Set to `false` if you want progress messages written to the CLI.
 
 `base_url`: URL used to query the API. Default is https://data.tepapa.govt.nz/collection/
 

@@ -1,0 +1,62 @@
+---
+# Blastochor config
+# Set data harvest parameters. See README.md for default values.
+
+# Setup
+api_key_env: TE-PAPA-KEY
+mapping_file: default.yaml
+input_dir: input_files
+output_dir: output_files
+use_skiplist: False
+skipfile: null
+min_image_size: 0
+max_list_size: 100
+clean_newlines: true
+coordinate_workaround: false
+
+# Group rows
+group_rows: false
+parent_label: null
+parent_fields:
+  include: null
+  fields: null
+child_fields:
+  include: null
+  fields: null
+ungrouped_fields:
+  include: null
+  fields: null
+
+# Sensitive data protection
+restrict_locality: false
+
+# Incorporate EMu data
+emufile: null
+
+# Profiler
+profiler_on: false
+profiler_filename: null
+
+# Run
+mode: search
+quiet: false
+base_url: https://data.tepapa.govt.nz/collection
+endpoint: object
+timeout: 5
+attempts: 3
+
+# List mode settings
+list_source: null
+
+# Search/scroll mode settings
+max_records: 10000
+size: 1000
+
+query: "new zealand"
+sort: -_meta.modified
+
+filter:
+  collection: null
+  allows_download: true
+  keyword_fields: null
+  keyword_values: null

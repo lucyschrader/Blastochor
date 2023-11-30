@@ -7,36 +7,37 @@ import time
 from tqdm import tqdm
 from askCO import Search, Scroll, Resource
 
-from blastochor.settings.Settings import config, add_to_record_memo
+from blastochor.settings.Settings import read_config, write_config
+from blastochor.util.Memo import memo, add_to_record_memo, format_pid, check_memo_for_pid, update_memo_with_media
 from blastochor.settings.Stats import stats
 from blastochor.util.ApiRecord import ApiRecord
-from blastochor.util.Mapper import mapping
 import blastochor.util.Processor as processor
 from blastochor.util.Records import records
+
 
 class Harvester():
 
     # Harvest from the Collections Online API
 
     def __init__(self, sleep=0.1):
-        self.quiet = config.get("quiet")
+        self.quiet = read_config("quiet")
         self.sleep = sleep
-        self.api_key = config.get("api_key")
-        self.timeout = config.get("timeout")
-        self.attempts = config.get("attempts")
-        self.max_records = config.get("max_records")
+        self.api_key = read_config("api_key")
+        self.timeout = read_config("timeout")
+        self.attempts = read_config("attempts")
+        self.max_records = read_config("record_limit")
         self.reharvest_list = []
 
     def complete_harvest(self, mode):
         # Gather search/scroll parameters and turn returned records into ApiRecord objects
         # TODO: Fail gracefully if search returns no results
         # Consider running fallback searches, eg changing endpoint to object
-        endpoint = config.get("endpoint")
-        query = config.get("query")
-        sort = config.get("sort")
-        filters = config.get("filters")
+        endpoint = read_config("endpoint")
+        query = read_config("query")
+        sort = read_config("sort")
+        filters = read_config("filters")
         start = 0
-        size = config.get("size")
+        size = read_config("size")
 
         if mode == "search":
             count_search = Search(
@@ -58,11 +59,11 @@ class Harvester():
             
             stats.search_result_count = count_search.record_count
             
-            if not config.get("quiet"):
+            if not read_config("quiet"):
                 print("Search record count: {}".format(stats.search_result_count))
 
-            if config.get("max_records") != -1:
-                record_limit = config.get("max_records")
+            if read_config("record_limit") != -1:
+                record_limit = read_config("record_limit")
             else:
                 record_limit = stats.search_result_count
 
@@ -96,7 +97,7 @@ class Harvester():
                             self.check_for_triggers(new_record)
 
                 start += size
-                if config.get("rate_limited"):
+                if read_config("rate_limited"):
                     time.sleep(self.sleep)
 
         elif mode == "scroll":
@@ -124,11 +125,12 @@ class Harvester():
             if scroll.record_count > 0:
                 print("Saving scrolled records")
                 for record in tqdm(scroll.records, desc="Working: "):
-                    self.save_record(record=record, endpoint=endpoint, label=config["corefile"])
+                    self.save_record(record=record, endpoint=endpoint, label=read_config("corefile"))
 
         stats.end_harvest()
 
-        extension_list = [config["record_memo"][i] for i in config["record_memo"] if config["record_memo"][i]["is_extension"] == True]
+        global memo
+        extension_list = [memo[i] for i in memo.keys() if memo[i].get("is_extension")]
 
         if len(extension_list) > 0:
             self.run_extension_harvest(extension_list)
@@ -141,18 +143,19 @@ class Harvester():
         if self.update_memo_from_harvest(record=record, endpoint=endpoint, label=label):
             new_record = ApiRecord(data=record, endpoint=endpoint)
             records.append(new_record)
-            if label == config["corefile"]:
+            if label == read_config("corefile"):
                 self.check_for_triggers(new_record)
 
     # Check if record is already in memo/saved and update as needed
     def update_memo_from_harvest(self, record, endpoint, label):
+        global memo
         pid = record.get("pid")
-        if pid in config["record_memo"]:
-            current_status = config["record_memo"][pid]["status"]
+        if pid in memo:
+            current_status = memo[pid]["status"]
             if current_status == "received":
                 return False
             elif current_status == "pending":
-                config["record_memo"][pid]["status"] = "received"
+                memo[pid]["status"] = "received"
                 return True
         else:
             add_to_record_memo(status="received", irn=record.get("id"), endpoint=endpoint, label=label)
@@ -161,18 +164,19 @@ class Harvester():
     def harvest_from_list(self, endpoint=None):
         # Tell AskCO which records to query
         # Get records into Records object
-        stats.list_count = len(config.get("record_memo"))
+        global memo
+        stats.list_count = len(memo)
 
         if endpoint == None:
-            endpoint = config.get("endpoint")
+            endpoint = read_config("endpoint")
 
         print("Retrieving records from list")
 
         irn_batch = HarvestBatch(endpoint=endpoint)
 
         # Segment list into batches of 250 and run a search for each batch
-        for pid in tqdm(config.get("record_memo").keys(), desc="Working: "):
-            memo_record = config.get("record_memo").get(pid)
+        for pid in tqdm(memo.keys(), desc="Working: "):
+            memo_record = memo.get(pid)
             
             irn_formatted = "(id:{})".format(memo_record["irn"])
             
@@ -184,7 +188,7 @@ class Harvester():
 
                 if len(batch_records.records) > 0:
                     for record in tqdm(batch_records.records, desc="Working: "):
-                        self.save_record(record=record, endpoint=endpoint, label=config["corefile"])
+                        self.save_record(record=record, endpoint=endpoint, label=read_config("corefile"))
 
                 irn_batch.irns = []
 
@@ -194,11 +198,11 @@ class Harvester():
 
             if len(batch_records.records) > 0:
                 for record in tqdm(batch_records.records, desc="Working: "):
-                    self.save_record(record=record, endpoint=endpoint, label=config["corefile"])
+                    self.save_record(record=record, endpoint=endpoint, label=read_config("corefile"))
 
         stats.end_harvest()
 
-        extension_list = [config["record_memo"][i] for i in config["record_memo"] if config["record_memo"][i]["is_extension"] == True]
+        extension_list = [memo[i] for i in memo.keys() if memo[i].get("is_extension")]
 
         if len(extension_list) > 0:
             self.run_extension_harvest(extension_list)
@@ -236,6 +240,7 @@ class Harvester():
 
     def check_for_triggers(self, record):
         # Review a harvested record against mapping to see what extension records need to be grabbed
+        mapping = read_config("mapping")
         for trigger in mapping.reharvest_triggers:
             if trigger.parent_endpoint == record.endpoint:
                 self.run_extension_trigger(record=record, trigger=trigger)
@@ -261,18 +266,18 @@ class Harvester():
         extension_pid = "tepapa:collection/{e}/{i}".format(e=trigger.harvest_endpoint, i=irn)
 
         # Check if record is already in memo
-        if config["record_memo"].get(extension_pid):
+        if memo.get(extension_pid):
             # If so, add new label if record will be written out
             if trigger.label:
-                if trigger.label not in config["record_memo"][extension_pid]["write_to"]:
-                    config["record_memo"][extension_pid]["write_to"].append(trigger.label)
-                    config["record_memo"][extension_pid]["structure"].update({trigger.label: {"write": True, "extends": [record.pid]}})
+                if trigger.label not in memo[extension_pid]["write_to"]:
+                    memo[extension_pid]["write_to"].append(trigger.label)
+                    memo[extension_pid]["structure"].update({trigger.label: {"write": True, "extends": [record.pid]}})
                 else:
-                    if record.pid not in config["record_memo"][extension_pid]["structure"][trigger.label]["extends"]:
-                        config["record_memo"][extension_pid]["structure"][trigger.label]["extends"].append(record.pid)
+                    if record.pid not in memo[extension_pid]["structure"][trigger.label]["extends"]:
+                        memo[extension_pid]["structure"][trigger.label]["extends"].append(record.pid)
         else:
             # Otherwise add to memo
-            add_to_record_memo(status="pending", irn=irn, endpoint=trigger.harvest_endpoint, extension=True, label=trigger.label, extends=record.pid)
+            add_to_record_memo(status="pending", irn=irn, endpoint=trigger.harvest_endpoint, extension=True, label=None)
 
     def run_extension_harvest(self, extension_list):
         # Work through list of triggered queries to pull down extra records
@@ -307,16 +312,16 @@ class Harvester():
         for record in extension_results:
             pid = record.get("pid")
             
-            if config["record_memo"][pid]["status"] == "pending":
+            if memo[pid]["status"] == "pending":
                 extension_record = ApiRecord(data=record, endpoint=extension_endpoint)
                 records.append(extension_record)
 
-                config["record_memo"][pid]["status"] = "received"
+                memo[pid]["status"] = "received"
                 stats.extension_records_count += 1
 
     def load_emu_data(self):
         # Load EMu data from a csv
-        emu_data_file = config.get("emufile")
+        emu_data_file = read_config("emufile")
         if emu_data_file:
             with open("input_files/{}".format(emu_data_file), newline="", encoding="utf-8") as f:
                 emu_data = csv.DictReader(f, delimiter=",")
@@ -332,7 +337,7 @@ class Harvester():
         if datum:
             datum = self.map_to_epsg(datum)
 
-        if config["record_memo"].get(event_pid):
+        if memo.get(event_pid):
             self.update_saved_event(event_pid, dec_lat, dec_long, datum)
 
     def map_to_epsg(self, datum, dec_long):
@@ -365,5 +370,3 @@ class HarvestBatch():
     def __init__(self, endpoint):
         self.endpoint = endpoint
         self.irns = []
-
-harvester = Harvester()

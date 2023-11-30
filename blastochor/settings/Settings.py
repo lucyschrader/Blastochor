@@ -1,184 +1,218 @@
-# -*- coding: utf-8 -*-
-
 import os
-import csv
 import yaml
 
-collections = ["Archaeozoology", "Art", "Birds", "CollectedArchives", "Crustacea", "Fish", "FossilVertebrates", "Geology", "History", "Insects", "LandMammals", "MarineInvertebrates", "MarineMammals", "Molluscs", "MuseumArchives", "PacificCultures", "Philatelic", "Photography", "Plants", "RareBooks", "ReptilesAndAmphibians", "TaongaMāori"]
-sciences = ["Archaeozoology", "Birds", "Crustacea", "Fish", "FossilVertebrates", "Geology", "Insects", "LandMammals", "MarineInvertebrates", "MarineMammals", "Molluscs", "Plants", "ReptilesAndAmphibians"]
-humanities = ["Art", "CollectedArchives", "History", "MuseumArchives", "PacificCultures", "Philatelic", "Photography", "RareBooks", "TaongaMāori"]
 
-def read_config():
-    config_path = "./Config.yml"
-    with open(config_path, "r", encoding="utf-8") as f:
-        print("Reading config file...")
-        return yaml.safe_load(f)
+config = {}
+collections = ["Archaeozoology", "Art", "Birds", "CollectedArchives", "Crustacea", "Fish",
+               "FossilVertebrates", "Geology", "History", "Insects", "LandMammals",
+               "MarineInvertebrates", "MarineMammals", "Molluscs", "MuseumArchives",
+               "PacificCultures", "Philatelic", "Photography", "Plants", "RareBooks",
+               "ReptilesAndAmphibians", "TaongaMāori"]
+humanities = ["Art", "CollectedArchives", "History", "MuseumArchives", "PacificCultures",
+              "Philatelic", "Photography", "RareBooks", "TaongaMāori"]
+sciences = ["Archaeozoology", "Birds", "Crustacea", "Fish", "FossilVertebrates", "Geology",
+            "Insects", "LandMammals", "MarineInvertebrates", "MarineMammals", "Molluscs",
+            "Plants", "ReptilesAndAmphibians"]
+defaults = {"mapfile": "default.yaml",
+            "endpoint": "object",
+            "query": "*",
+            "timeout": 5,
+            "attempts": 3}
+
+
+def read_config(key):
+    global config
+    value = config.get(key)
+    return value
+
+
+def write_config(key, value):
+    global config
+    config[key] = value
+
+
+def setup_project(project):
+    if project != "none":
+        config_file = "blastochor/projects/{}_config.yaml".format(project)
+    else:
+        config_file = "config.yaml"
+
+    if not os.path.exists(config_file):
+            config_file = "blastochor/projects/default.yaml"
+
+    read_config_file(config_file)
+
+
+def read_config_file(config_file):
+    global config
+    try:
+        with open(config_file, "r", encoding="utf-8") as f:
+            print("Reading {}".format(config_file))
+            config = yaml.safe_load(f)
+    except IOError:
+        break_on_settings_error("No config file found")
+
+
+def add_limit_to_config(limit):
+    if limit != -1:
+        write_config("record_limit", limit)
+
 
 def update_settings():
-    # Return error if no API key
-    if config.get("api_key_env"):
-        try:
-            config["api_key"] = os.environ.get(config.get("api_key_env"))
-        except:
-            config["api_key"] = None
-            print("No API key found in environment")
+    set_mode()
+    set_mapfile()
+    set_output_dir()
+    set_skiplist()
+    set_endpoint()
 
-    if not config.get("mapping_file"):
-    	config["mapping_file"] = "defaultmap.yaml"
-    
-    if not config.get("output_dir"):
-        print("Output directory needed to write files")
+    # API parameters
+    set_api_key()
+    set_timeout()
+    set_attempts()
 
-    if config.get("use_skiplist") == True:
+    # List mode parameters
+    set_list_source()
+
+    # Search mode parameters
+    set_query()
+    if read_config("mode") != "list":
+        set_filters()
+
+    if not read_config("quiet"):
+        print("Settings updated...")
+
+
+def set_mode():
+    # Return error if no mode selected
+    # DO! Return error if mode is none or not search/scroll/list
+    if not read_config("mode"):
+        break_on_settings_error("No mode selected - must be search, scroll or list")
+
+
+def set_mapfile():
+    # Defaults to defaultmap if no map provided
+    map_file = read_config("mapping_file")
+    if not map_file:
+        global defaults
+        map_file = defaults["mapfile"]
+        print("No mapfile provided. Setting to default map")
+
+    # Point to map
+    map_path = "blastochor/resources/mapfiles/{}".format(map_file)
+    write_config("mapping_file", map_path)
+    config["mapping_file"] = map_path
+
+
+def set_output_dir():
+    # Return error if no output directory
+    # TODO: properly check for directory's existence and create if not found
+    if not read_config("output_dir"):
+        break_on_settings_error("Output directory location needed to write files")
+
+
+def set_skiplist():
+    # Reads in list of IRNs to skip if provided
+    if read_config("use_skiplist"):
         populate_skiplist()
 
-    # TODO: Return error if no mode selected
-    if not config.get("mode"):
-        print("No mode selected - should be search, scroll or list")
-
-    if not config.get("endpoint"):
-        print("No endpoint provided. Setting to object")
-        config["endpoint"] = "object"
-
-    if not config.get("timeout"):
-        config["timeout"] = 5
-
-    if not config.get("attempts"):
-        config["attempts"] = 3
-
-    if config.get("list_source"):
-        config["list_source"] = "./{d}/{f}".format(d=config.get("input_dir"), f=config.get("list_source"))
-
-    if not config.get("query"):
-        config["query"] == "*"
-
-    config["record_memo"] = {}
 
 def populate_skiplist():
-    config["skiplist"] = []
-    with open(config.get("skipfile"), 'r', encoding="utf-8") as f:
+    skiplist = []
+    with open(read_config("skipfile"), 'r', encoding="utf-8") as f:
         lines = f.readlines()
 
-    for line in lines:                        
-        config["skiplist"].append(int(line.strip()))
+    for line in lines:
+        skiplist.append(int(line.strip()))
 
-    if not config.get("quiet"):
+    write_config("skiplist", skiplist)
+
+    if not read_config("quiet"):
         print("Skiplist populated")
 
-def set_filters():
-    config["filters"] = []
 
-    user_collection = config.get("filter").get("collection")
+def set_endpoint():
+    # Default to object endpoint if none provided
+    if not read_config("endpoint"):
+        global defaults
+        write_config("endpoint", defaults["endpoint"])
+        print("No endpoint provided. Setting to object")
+
+
+def set_api_key():
+    # Return error if no API key
+    if read_config("api_key_env"):
+        try:
+            write_config("api_key", os.environ.get(read_config("api_key_env")))
+        except KeyError:
+            break_on_settings_error("No API key found in environment")
+    else:
+        break_on_settings_error("API key required to live")
+
+
+def set_timeout():
+    # Set timeout to 5 seconds if not provided
+    if not read_config("timeout"):
+        global defaults
+        write_config("timeout", defaults["timeout"])
+
+
+def set_attempts():
+    # Set attempt count to 3 if not provided
+    if not read_config("attempts"):
+        global defaults
+        write_config("attempts", defaults["attempts"])
+
+
+def set_list_source():
+    # Concatenate input directory and list source filename
+    if read_config("list_source"):
+        list_filepath = "./{d}/{f}".format(d=read_config("input_dir"), f=read_config("list_source"))
+        write_config("list_source", list_filepath)
+
+
+def set_query():
+    # Set search query to wildcard if not provided
+    if not read_config("query"):
+        global defaults
+        write_config("query", defaults["query"])
+
+
+def set_filters():
+    filters = []
+
+    # Filter to a user-selected collection
+    filter_config = read_config("filter")
+    user_collection = filter_config.get("collection")
     if user_collection:
         if user_collection in collections:
-            config["filters"].append({"field": "collection", "keyword": user_collection})
-        if user_collection in sciences:
-            config["filters"].append({"field": "type", "keyword": "Specimen"})
-        elif user_collection in humanities:
-            config["filters"].append({"field": "type", "keyword": "Object"})
-            config["filters"].append({"field": "additionalType", "keyword": "PhysicalObject"})
+            filters.append({"field": "collection", "keyword": user_collection})
+            if user_collection in humanities:
+                filters.append({"field": "type", "keyword": "Object"})
+            elif user_collection in sciences:
+                filters.append({"field": "type", "keyword": "Specimen"})
+        else:
+            if not read_config("quiet"):
+                print("Invalid collection in filter config. Getting records for all collections")
 
-    if config.get("filter").get("allows_download") == True:
-        config["filters"].append({"field": "hasRepresentation.rights.allowsDownload", "keyword": "True"})
-    elif config.get("filter").get("allows_download") == False:
-        config["filters"].append({"field": "hasRepresentation.rights.allowsDownload", "keyword": "False"})
+    # Filter to records with downloadable images
+    if filter_config.get("allows_download") is not None:
+        if filter_config.get("allows_download"):
+            filters.append({"field": "hasRepresentation.rights.allowsDownload", "keyword": "True"})
+        elif not filter_config.get("allows_download"):
+            filters.append({"field": "hasRepresentation.rights.allowsDownload", "keyword": "False"})
 
-    kw_fields = config.get("filter").get("keyword_fields")
-    kw_values = config.get("filter").get("keyword_values")
+    # Filter using user-selected keywords
+    kw_fields = filter_config.get("keyword_fields")
+    kw_values = filter_config.get("keyword_values")
 
     if kw_fields:
         kw_fields = kw_fields.split(", ")
         kw_values = kw_values.split(", ")
         for i in range(0, len(kw_fields)):
-            config["filters"].append({"field": kw_fields[i], "keyword": kw_values[i]})
+            filters.append({"field": kw_fields[i], "keyword": kw_values[i]})
 
-# Memo functions
-def format_pid(endpoint=None, irn=None):
-    if irn:
-        return "tepapa:collection/{e}/{i}".format(e=endpoint, i=irn)
-    else:
-        return None
+    write_config("filters", filters)
 
-def check_memo_for_pid(pid):
-    record_memo = config["record_memo"].get(pid)
-    return record_memo
 
-def add_to_record_memo(status=None, irn=None, endpoint=None, label=None, extension=None, extends=None):
-    pid = format_pid(endpoint=endpoint, irn=irn)
-
-    if status == None:
-        status = "pending"
-    if extension == None:
-        extension = False
-
-    config["record_memo"][pid] = {
-        "status": status,
-        "irn": irn,
-        "endpoint": endpoint,
-        "pid": pid,
-        "write_to": [],
-        "structure": {},
-        "is_extension": extension,
-        "media_irns": []
-    }
-
-    if label:
-        config["record_memo"][pid]["write_to"].append(label)
-        config["record_memo"][pid]["structure"].update({label: {"write": True, "extends": []}})
-
-    return pid
-
-class InputList():
-    def __init__(self, source_file):
-        source_data = None
-        irn_list = []
-
-        endpoint = config.get("endpoint")
-        label = config.get("corefile")
-
-        if source_file.endswith(".csv"):
-            with open(source_file, newline="", encoding="utf-8") as f:
-                source_data = csv.DictReader(f, delimiter=",")
-
-                for row in source_data:
-                    this_irn = int(row.get("record_irn"))
-                    this_media_irn = int(row.get("media_irn"))
-                    if config.get("use_skipfile") == True:
-                        if self.skip_check(this_irn) == True:
-                            break
-
-                    this_pid = "tepapa:collection/{e}/{i}".format(e=endpoint, i=this_irn)
-                    if not config["record_memo"].get(this_pid):
-                        add_to_record_memo(status="pending", irn=this_irn, endpoint=endpoint, label=label)
-
-                    if this_media_irn:
-                        memo_record = config["record_memo"][this_pid]
-                        if this_media_irn not in memo_record["media_irns"]:
-                            memo_record["media_irns"].append(this_media_irn)
-
-        elif source_file.endswith(".txt"):
-            with open(source_file, "r", encoding="utf-8") as f:
-                source_data = f.readlines()
-
-                for row in source_data:
-                    this_irn = int(row.strip())
-                    if config.get("use_skipfile") == True:
-                        if self.skip_check(this_irn) == True:
-                            break
-
-                    this_pid = "tepapa:collection/{e}/{i}".format(e=endpoint, i=this_irn)
-                    if not config["record_memo"].get(this_pid):
-                        add_to_record_memo(status="pending", irn=this_irn, endpoint=endpoint, label=label)
-        
-    def skip_check(self, irn):
-        if irn in config.get("skiplist"):
-            return True
-        
-        return False
-
-config = read_config()
-update_settings()
-set_filters()
-
-if config.get("quiet") == False:
-    print("Settings updated...")
+def break_on_settings_error(message):
+    exit("Error during setup: {}".format(message))

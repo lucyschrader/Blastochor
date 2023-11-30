@@ -40,9 +40,6 @@ def apply_coordinate_workaround():
         if datum_value:
             datum_value = map_datum_value(datum_value)
 
-        print(event_pid)
-        print(lat_value, long_value, datum_value)
-
         # Update the saved record with the original EMu values
         update_record(event_pid, lat_value, long_value, datum_value)
 

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import csv
-from blastochor.settings.Settings import config
+from blastochor.settings.Settings import read_config, write_config
 from blastochor.settings.Stats import stats
 
 class OutputCSV():
@@ -14,7 +14,7 @@ class OutputCSV():
 
 	def generate_filename(self):
 		name = "{}-export.csv".format(self.label)
-		path = "{}/".format(config.get("output_dir"))
+		path = "{}/".format(read_config("output_dir"))
 		return path + name
 
 	def write_header_row(self, fieldnames):
@@ -49,7 +49,7 @@ class OutputCSV():
 				value = ""
 
 			# If removing newlines is turned on, check if value is a string and replace them with spaces
-			if config.get("clean_newlines"):
+			if read_config("clean_newlines"):
 				if isinstance(value, str):
 					value = value.replace("\n", " ")
 
