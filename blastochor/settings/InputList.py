@@ -8,9 +8,9 @@ def read_input_list(source_file):
     label = read_config("corefile")
 
     if source_file.endswith(".csv"):
-        import_file_from_csv(source_file, endpoint, label)
+        import_list_from_csv(source_file, endpoint, label)
     elif source_file.endswith(".txt"):
-        import_file_from_txt(source_file, endpoint, label)
+        import_list_from_txt(source_file, endpoint, label)
 
 
 def import_list_from_csv(source_file, endpoint, label):

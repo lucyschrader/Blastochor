@@ -175,7 +175,7 @@ class Harvester():
         irn_batch = HarvestBatch(endpoint=endpoint)
 
         # Segment list into batches of 250 and run a search for each batch
-        for pid in tqdm(memo.keys(), desc="Working: "):
+        for pid in list(memo.keys()):
             memo_record = memo.get(pid)
             
             irn_formatted = "(id:{})".format(memo_record["irn"])
@@ -187,7 +187,7 @@ class Harvester():
                 batch_records = self.batch_search(irn_batch.irns, endpoint)
 
                 if len(batch_records.records) > 0:
-                    for record in tqdm(batch_records.records, desc="Working: "):
+                    for record in batch_records.records:
                         self.save_record(record=record, endpoint=endpoint, label=read_config("corefile"))
 
                 irn_batch.irns = []
@@ -197,7 +197,7 @@ class Harvester():
             batch_records = self.batch_search(irn_batch=irn_batch.irns, endpoint=endpoint)
 
             if len(batch_records.records) > 0:
-                for record in tqdm(batch_records.records, desc="Working: "):
+                for record in batch_records.records:
                     self.save_record(record=record, endpoint=endpoint, label=read_config("corefile"))
 
         stats.end_harvest()
@@ -277,7 +277,9 @@ class Harvester():
                         memo[extension_pid]["structure"][trigger.label]["extends"].append(record.pid)
         else:
             # Otherwise add to memo
-            add_to_record_memo(status="pending", irn=irn, endpoint=trigger.harvest_endpoint, extension=True, label=None)
+            add_to_record_memo(status="pending", irn=irn, endpoint=trigger.harvest_endpoint, extension=True, label=trigger.label)
+            if trigger.label:
+                memo[extension_pid]["structure"][trigger.label]["extends"].append(record.pid)
 
     def run_extension_harvest(self, extension_list):
         # Work through list of triggered queries to pull down extra records
@@ -286,7 +288,7 @@ class Harvester():
         # Split up records by endpoint to allow searching just by IRN
         queries_by_endpoint = {"agent": [], "fieldcollection": [], "object": [], "place": [], "taxon": []}
 
-        for pending_record in tqdm(extension_list, desc="Working: "):
+        for pending_record in tqdm(extension_list, desc="Extending: "):
             endpoint = pending_record["endpoint"]
             irn = pending_record["irn"]
 
