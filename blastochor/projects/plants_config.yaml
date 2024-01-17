@@ -56,7 +56,7 @@ query: "*"
 sort: -_meta.modified
 
 filter:
-  collection: Plants
+  collection: Birds
   allows_download: null
   keyword_fields: null
   keyword_values: null

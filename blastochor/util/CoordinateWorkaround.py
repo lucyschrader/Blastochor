@@ -1,12 +1,13 @@
-from blastochor.settings.Settings import config
+from blastochor.settings.Settings import read_config
 from blastochor.util.Records import records
+from blastochor.util.Memo import memo
 from lxml import etree
 
 # When triggered, finds the EMu coordinate and datum values for collection event records
 # and replaces the API values, avoiding the transformation applied in some cases by the ETL
 def apply_coordinate_workaround():
     print("Starting coordinate workaround")
-    emu_data_file = "{d}/{f}".format(d=config.get("input_dir"), f=config.get("emufile"))
+    emu_data_file = "{d}/{f}".format(d=read_config("input_dir"), f=read_config("emufile"))
 
     # Define the table name. Tuples are the start of a new record if their parent is this
     table_name = "ecollectionevents"
@@ -66,7 +67,7 @@ def check_has_irn(record):
 
 def check_if_published(event_pid):
     try:
-        event_memo = config["record_memo"][event_pid]
+        event_memo = memo[event_pid]
         return True
     except KeyError:
         return False
