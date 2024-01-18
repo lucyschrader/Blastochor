@@ -1,0 +1,179 @@
+---
+literal:
+  function_name: literal
+  display_name: literal
+  description: Use the exact value found at this place in the record.
+  parameters:
+    - parameter: path
+      required: true
+      multiple_allowed: false
+    - parameter: ordinal
+      required: false
+      multiple_allowed: false
+collate_list:
+  function_name: collate_list
+  display_name: collate list
+  description: Get all listed values at this place in the record.
+  parameters:
+    - parameter: path
+      required: true
+      multiple_allowed: true
+hardcoded:
+  function_name: hardcoded
+  display_name: hardcoded
+  description: Standard value to use for every row.
+  parameters:
+    - parameter: value
+      required: true
+      multiple_allowed: false
+format_string:
+  function_name: format_string
+  display_name: format a string
+  description: Get values and insert them into a longer string of text.
+  parameters:
+    - parameter: string
+      required: true
+      multiple_allowed: false
+    - parameter: path
+      required: true
+      multiple_allowed: true
+    - parameter: ordinal
+      required: false
+      multiple_allowed: false
+    - parameter: required
+      required: false
+      multiple_allowed: false
+    - parameter: strip
+      required: false
+      multiple_allowed: true
+conditional:
+  function_name: conditional
+  display_name: conditional inclusion
+  description: Get a value only if a specified condition is met.
+  parameters:
+    - parameter: path
+      required: true
+      multiple_allowed: false
+    - parameter: condition_path
+      required: true
+      multiple_allowed: false
+    - parameter: match
+      required: true
+      multiple_allowed: true
+    - parameter: fallback_match
+      required: false
+      multiple_allowed: true
+continue:
+  function_name: continue
+  display_name: only continue if
+  description: Don't process this value unless the condition is met.
+  parameters:
+    - parameter: condition_path
+      required: true
+      multiple_allowed: false
+    - parameter: condition_value
+      required: true
+      multiple_allowed: false
+clean_html:
+  function_name: clean_html
+  display_name: clean up html
+  description: Remove junk like word formatting and FONT tags. Good to chain after retrieving descriptions.
+  parameters: null
+concatenate:
+  function_name: concatenate
+  display_name: combine list
+  description: Combine a list of values together into one string. Done automatically before writing out.
+  parameters: null
+country_code:
+  function_name: country_code
+  display_name: country code
+  description: Convert a country name into an ISO code, eg 'NZ' for New Zealand.
+  parameters:
+    - parameter: path
+      required: true
+      multiple_allowed: false
+create_filename:
+  function_name: create_filename
+  display_name: create filename
+  description: Turn a string of text into a usable filename.
+  parameters:
+    - parameter: suffix
+      required: true
+      multiple_allowed: false
+first_match:
+  function_name: first_match
+  display_name: first matching value
+  description: Get the first available match from a set of paths.
+  parameters:
+    - parameter: path
+      required: true
+      multiple_allowed: true
+identification_qualifier:
+  function_name: identification_qualifier
+  display_name: format identification qualifier
+  description: Properly format taxon names and qualifiers such as '?' and 'cf'.
+  parameters:
+    - parameter: taxon_path
+      required: true
+      multiple_allowed: false
+    - parameter: qualifier_path
+      required: true
+      multiple_allowed: false
+lookup:
+  function_name: lookup
+  display_name: lookup record
+  description: Use an IRN you've retrieved to get the record it refers to.
+  parameters:
+    - parameter: endpoint
+      required: true
+      multiple_allowed: false
+map_value:
+  function_name: map_value
+  display_name: lookup record
+  description: Transform a given source value into something else.
+  parameters: null
+must_match:
+  function_name: must_match
+  display_name: must match
+  description: Only include a source value if it matches something you choose.
+  parameters:
+    - parameter: terms
+      required: true
+      multiple_allowed: true
+related:
+  function_name: related
+  display_name: related
+  description: Look up records related to the current one, such as an artist's works.
+  parameters:
+    - parameter: size
+      required: false
+      multiple_allowed: false
+    - parameter: types
+      required: false
+      multiple_allowed: true
+set_priority:
+  function_name: set_priority
+  display_name: set priority
+  description: Set a number indicating priority based on the record's quality score.
+  parameters: null
+truncate:
+  function_name: truncate
+  display_name: truncate
+  description: Shorten a value to a specified length, and optionally end with a suffix like '...'.
+  parameters:
+    - parameter: length
+      required: true
+      allow_multiple: false
+    - parameter: suffix
+      required: false
+      allow_multiple: false
+use_config:
+  function_name: use_config
+  display_name: use config
+  description: Use a value specified in your config file, like 'endpoint'.
+  parameters: null
+use_group_labels:
+  function_name: use_group_labels
+  display_name: use group labels
+  description: Use the group labels specified in your config file.
+  parameters: null

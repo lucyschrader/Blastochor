@@ -1,0 +1,16 @@
+---
+required:
+  - primary_endpoint
+optional:
+  - reference_column
+  - requires
+  - reduce
+  - explode
+  - extend
+extension_keys:
+  - endpoint
+  - path
+  - for_label
+requires_keys:
+  - path
+  - condition

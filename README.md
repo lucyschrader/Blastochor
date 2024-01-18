@@ -10,13 +10,13 @@ This repo includes a basic mapping file that will be used if another is not prov
 
 ## Still to do
 - A complete default mapping that dumps out as much data as possible
-- Conditional inclusion of records after harvest has run (eg only write out if x field is present, if image size is over x pixels)
 - Sample mode to pull down representative range of records for testing
 - Output as json
+- Logging functionality
 - Command line options to run a search or single record, returning json or flattened default csv
 - Front end to create mapping file and run from browser
+- New kind of output that relates records together based on given criteria
 - Look into how easily this app could be forked for other museum APIs
-- A lot more error handling and ability to fail gracefully
 
 ## Installation
 Clone this repo using `git clone`. Install the following packages:
@@ -27,13 +27,15 @@ Clone this repo using `git clone`. Install the following packages:
 Go to https://data.tepapa.govt.nz/docs/register.html and register for an API key. Add the API key to an environment variable called 'TE-PAPA-KEY'.
 
 ## Usage
-Edit your config file to set search and export parameters. If creating your own, use `config.yaml` at the root level.
+The `config.yaml` file at the root level sets search and export parameters – this file has useful defaults, so if you want to change it much, create a new one in the `projects` directory. More on this below.
 
-The main functional setting is `search`, `scroll` or `list`. You can either send a search query, which will page through and return all relevant records (limit 50K), scroll through all records (no limit) or provide the app with a list of IRNs (internal reference numbers, Te Papa's record identifiers), which will be individually queried and returned.
+The main functional setting in the config file is `mode`: `search`, `scroll` or `list`. You can either send a search query, which will page through and return all relevant records (limit 50K), scroll through all records (no limit) or provide the app with a list of IRNs (internal reference numbers, Te Papa's record identifiers), which will be individually queried and returned.
 
-If using a custom mapping, you can put this wherever - just make sure `config.yaml` is pointing to it. You can also use `blastochor/projects/default.yaml` to get some general object information.
+The default mapping file (`resources/mapfiles/defaultmap.yaml`) will provide some basic object information. You can create a new one for your project.
 
 When your config and mapping are ready, run the app with `python -m app`.
+
+When run, the application runs validation on your config and mapping files. If any errors are found the application will exit and you'll find a report textfile at root containing the validation log. If the config's `quiet` is set to `false`, it will also be printed to the CLI.
 
 ## Command line parameters
 Blastochor can be set up with projects using a pre-defined config and mapping file. Put the config file in `projects` with the name `[projectname]_config.yaml` and the mapfile (set the name in the config file) in `resources/mapfiles`.
@@ -42,14 +44,16 @@ To run a project, enter `python -m app --project=[projectname]`.
 
 You can also set a limit on how many records to retrieve, outside what's in your config file - great for testing. Enter `python -m app --limit=[number]`. If search or scroll are set up to get more records (eg you ask for 100 but scroll is set up to get 1000 at a time), you'll get the larger number.
 
-Use both by stringing them together: `python -m app --project=[projectname] --limit=[number]`.
+Run the application with a profiler using `python -m app --profiler=True`. A `.prof` file will be written to the `logging` directory.
+
+Use multiple parameters by stringing them together: `python -m app --project=plants --limit=10000`.
+
+## Config parameters
 
 ### Setup
 `api_key_env`: Environment name for your unique API key. Default is `TE-PAPA-KEY`
 
-`mapping_file`: Filename for file containing data mapping rules. Default is 11 (points to a default mapping inside the app)
-
-`corefile`: If exporting multiple files, set to the label of the primary file, eg `core`. Default is `null`
+`mapping_file`: Filename for file containing data mapping rules. Default is `default.yaml` (points to a default mapping inside the app)
 
 `input_dir`: Directory holding any source files, like a skiplist or list or IRNs. Default is `input_files`
 
@@ -59,9 +63,11 @@ Use both by stringing them together: `python -m app --project=[projectname] --li
 
 `skipfile`: Filename for skiplist. Default is `null`
 
-`min_image_size`: Only export object records that have images that are at least this many px on each side. Default is `null`
+`min_image_size`: Only export object records that have images that are at least this many px on each side. Default is `0`
 
 `max_list_size`: Only collate lists of values into a single value up to the specified size. Default is `100`
+
+`clean_newlines`: Removes newlines (`\n`) from values, as CSVs treat them as literal linebreaks. Default is `true`.
 
 `group_rows`: If exploding records into multiple rows, set to `true` to group them under a parent row. Default is `null`
 
@@ -70,11 +76,11 @@ Use both by stringing them together: `python -m app --project=[projectname] --li
 `parent_fields`, `child_fields`, `ungrouped_fields`: Specify fields that need to be included or excluded for each kind of row. Set `include` to `true` to only include the specified fields, or `false` to include everything except those specified. Only used if `group_rows` is `true`
 
 ### Run
-`mode`: Set to search or list. Default is `search`
+`mode`: Set to search, scroll, or list. Default is `search`
 
-`quiet`: Set to `false` if you want progress messages written to the CLI.
+`quiet`: Set to `false` if you want detailed progress messages written to the CLI. Some broader messages and progress bars will be displayed either way. Default is `true`
 
-`base_url`: URL used to query the API. Default is https://data.tepapa.govt.nz/collection/
+`base_url`: URL used to query the API. Default is `https://data.tepapa.govt.nz/collection/`
 
 `endpoint`: Set to the primary endpoint you want data from, or set to `null` if you want to search across all endpoints. Defaults to `object` when querying individual records if not set
 
@@ -86,7 +92,7 @@ Use both by stringing them together: `python -m app --project=[projectname] --li
 `list_source`: Filename for list of IRNs to query
 
 ### Search/scroll mode settings
-`max-records`: Set a limit on the number of records you want to export. Default is `-1` (no limit)
+`record_limit`: Set a limit on the number of records you want to export. Default is `null` (no limit)
 
 `size`: Set a limit on the number of records returned in one page of results. Set to a maximum of `1000` for scroll. Default is `100`
 
@@ -100,22 +106,21 @@ Filters:
 
 `allows_download`: Set to `true` to only return object records that include downloadable images, `false` to only return records that don't. Default is `null`
 
-`keyword_fields`: Fieldnames for extra filters on your search. Separate with `, `
+`keyword_fields`: Fieldnames for extra filters on your search. Separate with `|`
 
-`keyword_values`: Values for extra filters. Ensure you have the same number of terms as `keyword_fields` and they're in the right order. Separate with `, `
+`keyword_values`: Values for extra filters. Ensure you have the same number of terms as `keyword_fields` and they're in the right order. Separate with `|`
 
 ## Mapping
-Mapping files are YAML (.yaml) files that name the CSVs that should be created, triggers for harvesting additional records, and lines of rules with the export-side fields in each file. Each rule then includes the API source field used and the transformation rules applied.
+Mapping files are YAML (`.yaml`) files that name the CSVs that should be created, triggers for harvesting additional records, and lines of rules with the export-side fields in each file. Each rule then includes the API source field used and the transformation rules applied.
 
-Each output file is a list item containing a dictionary of options.
 
-`label` is what the app uses to generate output files and ensure they're applying the right rules to the right records.
+`label` is what the app uses to generate output files' names and ensure it's applying the right rules to the right records.
 
-`reference_column` adds a column to the start of the CSV using the provided title, leaving a place for non-core files to reference the core file in each row.
+`reference_column` adds a column to the start of the CSV using the provided fieldname, providing a place for non-core files to reference the core file in each row.
 
-`primary_endpoint` is the endpoint (eg object, agent, taxon) this file will mainly use. Other endpoints can be specified in certain processing functions.
+`primary_endpoint` is the endpoint (eg `object`, `agent`, `taxon`) this file will mainly use. Other endpoints can be specified in certain processing functions.
 
-`explode` sets a field with a list value where each child is written out separately, such as when you want a new row for every image attached to an object record.
+`explode` sets a field containing list value where each child is written out separately, such as when you want a new row for every image attached to an object record.
 
 `reduce` cuts down the record's data to just the specified section, for example the list of images under `hasRepresentation`. This makes it easier to then navigate to subfields. The script expects the reduced data to be a list.
 
@@ -138,6 +143,8 @@ This checks harvested records for an IRN in the evidenceFor.atEvent.id field. If
 
 If the record has already been harvested, the record object will just be updated with a flag that it needs to be included in that file.
 
+`path` can contain multiple values for the same endpoint. Separate these with `, `.
+
 To output another CSV with the same endpoint as the core file and using the same path, just add it to the same item's `for_label` with a `, `. For example:
 ```
 endpoint: object
@@ -150,94 +157,94 @@ If `for_label` is `null`, the record will be saved but not written out anywhere 
 Extension records are batched and retrieved in lots of 250 per endpoint.
 
 ### Fields
-The `fields` section contains a list of data transformation rules, headed up with the output field names. These need to be in the order you want them to show in your CSV. The rules are applied to every record included in the file.
+The `fields` section contains a list of data transformation rules, headed up with the output fieldnames. These need to be in the order you want them to show in your CSV. The rules are applied to every record included in the file.
 
-Each field then contains a list of functions (just one or several), which contain the API fields, strings, integers, or other parameters they'll be working on.
+Each field then contains a list of functions (one or multiple that run in sequence), which contain a dictionary of the API fields, strings, integers, or other parameters they'll be working on.
 
 For example:
 ```
 - occurrenceID:
   - literal:
-    - pid
+      path: pid
 ```
 
 This means the file will have a column called `occurrenceID`, which take a straight copy of the contents of the record's `pid` field.
 
 When using a field name as a parameter, you need to provide the full path (unless you've `reduced` the record - see above). If one of the fields in the path contains a list, include an `i` to show it needs to be iterated through. For example:
-`identification.i.identifiedBy.title`
+`path: identification.i.identifiedBy.title`
 
-Functions can be chained together by adding them as further list items.
+Functions can be chained together by adding them as further list items under the fieldname.
 
 ### Available functions
 `literal`
 
-Copies the value at the given location
-- parameters: path to field. If the path includes a list, add an integer to copy a specified list member - if no integer is provided for a list, it will just get the first (`0`) value.
-- example: `pid`
-- example: `additionalType, 0`
-- example: `production.i.creator.title, 1`
+Copies the value at the given location. If the path includes a list, you can add an integer to copy a specified list member - if no integer is provided for a list, it will just get the first (`0`) value.
+- parameters: `path`, `ordinal`
+- example: `path: pid`
+- example: `path: additionalType`, `ordinal: 0`
+- example: `path: production.i.creator.title`, `ordinal: 1`
 
 `hardcoded`
 
-Sets the value to the string provided. Set the parameter to `explode_ordinal` if you want the value to be the row's order within the record.
-- parameters: a string
-- example: `https://data.tepapa.govt.nz`
+Sets the value to the string provided. Set the parameter to `value: explode_ordinal` if you want the value to be the row's order within the record.
+- parameters: `value`
+- example: `value: https://data.tepapa.govt.nz`
 
 `collate_list`
 
 Gets all values of a field within a list, or multiple lists. Automatically concatenated with " | " before writing out. Maximum length of list is controlled in `Config.yml`.
-- parameters: path to field
-- example: `hasRepresentation.i.rights.title`
-- example: `depicts.i.title, influencedBy.i.title`
+- parameters: `path`
+- example: `path: hasRepresentation.i.rights.title`
+- example: `path: depicts.i.title, influencedBy.i.title`
 
 `clean_html`
 
 Removes unwanted html markup from a value previously returned, such as a `description`.
-- parameters: null
+- parameters: `null`
 
 `concatenate`
 
-Joins values in a list using " | ", after removing None values. Use after calling another function that produces a list
-- parameters: null
+Joins values in a list using " | ", after removing `None` values. Use after calling another function that produces a list.
+- parameters: `null`
 
 `conditional`
 
-Returns a value for a given field if another field matches a specified value, indicated using `=`. Both paths need to be in the same section of the record. If the path given points to a list, each child of the list will be checked. If multiple values match only the first will be returned.
-- parameters: path to field and path to field to check, with the specified value
-- example: `related.i.contentUrl` and `related.i.title=ORCID`
+Returns a value for a given field if another field matches a specified value. Both paths need to be in the same section of the record. If the path given points to a list, each child of the list will be checked. If nothing is found with the initial match condition, an optional fallback condition can be tried.
+- parameters: `path`, `condition_path`, `match`, `fallback_match`
+- example: `path: related.i.contentUrl`, `condition_path: related.i.title`, `match: ORCID`, `fallback_match: Wikidata`
 
 `country_code`
 
-Finds a country name in a record and looks up its ISO 2-character country code.
-- parameters: path to a field that contains a country name
-- example: `evidenceFor.atEvent.atLocation.country`
+Finds a country name in a record and looks up its ISO 2-character country code. The file containing country codes is at `resources/countrycodes.json`.
+- parameters: `path`
+- example: `path: evidenceFor.atEvent.atLocation.country`
 
 `create_filename`
 
 Use after a function that returns a string. Replaces unsafe characters (` , ?, \, :, ;` and so on) with an underscore, or removes them.
-- parameters: suffix to append to the filename
-- example: `jpg`
+- parameters: `suffix`
+- example: `suffix: jpg`
 
 `fallback`
 
-Use to substitute another value if the original request returns None. Next another set of functions and parameters underneath.
+Use to substitute another value if the original request returns None. Nest another set of functions and parameters underneath.
 ```
 - format_string:
-  - {} ({})
-  - production.i.contributor.title, production.i.role
-  - required
+    string: {} ({})
+    path: production.i.contributor.title, production.i.role
+    required: true
 - fallback:
   - literal:
-    - production.i.contributor.title
+      path: production.i.contributor.title
 ```
 
-This returns a formatted string if both a contributor's title and their role are present. Because `format_string` uses the required parameter, if there's no `role` the function will return None, and then just the title will be returned as a literal value.
+This returns a formatted string if both a contributor's title and their role are present. Because `format_string` uses the required parameter, if there's no `role` the function will return `None`, and then just the `title` will be returned as a literal value.
 
 `first_match`
 
 Try multiple paths in order and return the value of the first available one. Useful when trying to return the most precise available location.
-- parameters: list of paths, separated by `, `
-- example: `evidenceFor.atEvent.atLocation.locality, evidenceFor.atEvent.atLocation.stateProvince, evidenceFor.atEvent.atLocation.country`
+- parameters: `path` (separated by `, `)
+- example: `path: evidenceFor.atEvent.atLocation.locality, evidenceFor.atEvent.atLocation.stateProvince, evidenceFor.atEvent.atLocation.country`
 
 `for_each`
 
@@ -245,65 +252,66 @@ Use after another function that returns a list. Goes through and performs furthe
 ```
 - recordedByID:
   - collate_list:
-    - evidenceFor.atEvent.recordedBy.i.id
+      path: evidenceFor.atEvent.recordedBy.i.id
   - for_each:
     - lookup:
-      - agent
+        endpoint: agent
     - conditional:
-      - related.i.contentUrl
-      - related.i.title=ORCID
+        path: related.i.contentUrl
+        condition_path: related.i.title
+        match: ORCID
   - concatenate:
-    - null
+      null
 ```
 
-This finds the agent id for every person at a specimen collection event, looks them up one at a time, and checks if they have an ORCID identifier. None values get stripped out once all child functions have run.
+This finds the agent id for every person at a specimen collection event, looks them up one at a time, and checks if they have an ORCID identifier. `None` values get stripped out once all child functions have run.
 
 `format_string`
 
 Finds a value and inserts it into a provided string at a specified place. Mark the location for each value using `{}`. Include an optional third parameter `required` to return None if any of the values are unavailable.
-- parameters: string, path to field (if more than one, separated with `, `), required (optional)
-- example: `https://collections.tepapa.govt.nz/object/{}` and `id`
-- example: `{} of {}` and `typeStatus, qualifiedName` and `required`
+- parameters: `string`, `path` (if more than one, separated with `, `), `required`
+- example: `string: https://collections.tepapa.govt.nz/object/{}`, `path: id`
+- example: `string: {} of {}`, `path: typeStatus, qualifiedName`, `required: true`
 
 `lookup`
 
-Find an IRN in the record and return the associated record for the next function. Record needs to have been harvested either directly or using `extend` functionality.
-- parameters: endpoint and path to field for the record's IRN
-- example: `agent` and `production.i.contributor.id`
+Use after finding an IRN to return the associated record for the next function. Record needs to have been harvested either directly or using `extend` functionality.
+- parameters: `endpoint`
+- example: `endpoint: agent`
 
 `map_value`
 
-Use after another function that returns a value - can be a single value or a list. Each parameter for this function contains a source value and what to map it to. Each value in a list will be checked. If the value doesn't match a parameter's key, will return None. Note that this function's parameters are dictionary key/value pairs, and don't include the starting `-`.
+Use after another function that returns a value – this can be a single value or a list. Each parameter for this function contains a source value and what to map it to. Each value in a list will be checked. If the value doesn't match any parameter's key, it will return `None`. Note that this function's parameters are dictionary key/value pairs.
 - parameters: key/value pairs
 - example:
 
 ```
 - literal:
-  - restrictLocalityData
+  - path: restrictLocalityData
 - map_value:
-  true: precise location information not given for threatened species
+    true: precise location information not given for threatened species
 ```
 
 `must_match`
 
 Use after another function that returns a value or list of values. Checks each term against an authority list and only keeps the ones you want. Not case-sensitive.
-- parameters: list of authority terms, separated with `, `
-- example: `canvas, paper, plaster, cardboard, ceramic, wood, clay`
+- parameters: `terms` (separated with `, `)
+- example: `terms: canvas, paper, plaster, cardboard, ceramic, wood, clay`
 
 `related`
 
-Make a fresh query to the special /related endpoint for the current record, returning records that are connected in some way. Can only be used on a complete record as it requires the `href` value. Set a size to limit the number of results (default is 100), and specify types of records to filter down.
-- parameters: size (int) and types (Capitalise, separate with `,` - note the lack of a space character)
-- example: `50` and `Object,Specimen`
+Make a fresh query to the special `/related` endpoint for the current record, returning records that are connected in some way. Can only be used on a complete record as it requires the `href` value. Set a size to limit the number of results (default is `100`), and specify types of records to filter down.
+- parameters: `size`, `types` (Capitalise and separate with `,` - note the lack of a space character)
+- example: `size: 50` and `types: Object,Specimen`
 
 `use_config`
 
 Pull a specified term out of the config file. Can also use `hardcoded` but lets you avoid doubling up if you change the parameter.
-- parameters: a string
-- example: `base_url`
+- parameters: `key`
+- example: `key: base_url`
 
 `use_group_labels`
 
-If grouping rows for each record, lets you set a label for the parent row, each child row, and standalone rows.
-- parameters: three strings, can be null
-- example: `sequence`, `image`, `image`
+If grouping rows for each record, lets you set a label for the parent row, each child row, and standalone rows. Values can be `null`.
+- parameters: `parent`, `child`, `other`
+- example: `parent: sequence`, `child: image`, `other: image`

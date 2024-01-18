@@ -1,0 +1,565 @@
+---
+- label: core
+  reference_column: null
+  primary_endpoint: object
+  explode: null
+  reduce: null
+  extend:
+    - endpoint: object
+      path: id
+      for_label: identification, multimedia
+    - endpoint: fieldcollection
+      path: evidenceFor.atEvent.id
+      for_label: null
+    - endpoint: taxon
+      path: identification.i.toTaxon.id
+      for_label: null
+    - endpoint: agent
+      path: evidenceFor.atEvent.recordedBy.i.id, identification.i.identifiedBy.id
+      for_label: null
+  fields:
+    - occurrenceID:
+      - literal:
+          path: pid
+    - type:
+      - literal:
+          path: additionalType.i
+    - created:
+      - literal:
+          path: _meta.created
+    - modified:
+      - literal:
+          path: _meta.modified
+    - language:
+      - hardcoded:
+          value: en
+    - license:
+      - hardcoded:
+          value: Creative Commons Attribution 4.0 International license (CC BY 4.0)
+    - rightsHolder:
+      - hardcoded:
+          value: Museum of New Zealand Te Papa Tongarewa
+    - accessRights:
+      - hardcoded:
+          value: https://data.tepapa.govt.nz/docs/
+    - references:
+      - format_string:
+          string: https://collections.tepapa.govt.nz/object/{}
+          path: id
+    - institutionID:
+      - hardcoded:
+          value: https://scientific-collections.gbif.org/institution/2749cf1e-60d9-4b03-9c71-3763632b8f78
+    - collectionID:
+      - hardcoded:
+          value: https://scientific-collections.gbif.org/collection/6b5044bb-5fff-49ef-89c1-f52ae9e81550
+    - datasetID:
+      - hardcoded:
+          value: tepapa:collection/dataset/plants
+    - institutionCode:
+      - hardcoded:
+          value: NMNZ
+    - collectionCode:
+      - hardcoded:
+          value: WELT
+    - datasetName:
+      - hardcoded:
+          value: WELT Herbarium at Museum of New Zealand Te Papa Tongarewa
+    - ownerInstitutionCode:
+      - hardcoded:
+          value: NMNZ
+    - basisOfRecord:
+      - literal:
+          path: basisOfRecord
+    - informationWithheld:
+      - literal:
+          path: restrictLocalityData
+      - map_value:
+          true: precise location information not given for threatened species
+    - dataGeneralizations:
+      - literal:
+          path: restrictLocalityData
+      - map_value:
+          true: coordinates and precise locality data removed
+    - catalogNumber:
+      - literal:
+          path: identifier
+    - recordNumber:
+      - conditional:
+          path: previousIdentifier.i.identifier
+          condition_path: previousIdentifier.i.notes
+          match: Collector's number|Collector number|Collector(s) number|collector number
+    - recordedBy:
+      - collate_list:
+          path: evidenceFor.atEvent.recordedBy.i.title
+    - recordedByID:
+      - collate_list:
+          path: evidenceFor.atEvent.recordedBy.i.id
+      - for_each:
+        - lookup:
+            endpoint: agent
+        - conditional:
+            path: related.i.contentUrl
+            condition_path: related.i.title
+            match: ORCID
+            fallback_match: Wikidata
+    - sex:
+      - literal:
+          path: sex
+    - lifeStage:
+      - literal:
+          path: lifeStage
+    - occurrenceStatus:
+      - hardcoded:
+          value: present
+    - preparations:
+      - literal:
+          path: specimenType
+    - otherCatalogNumbers:
+      - conditional:
+          path: previousIdentifier.i.identifier
+          condition_path: previousIdentifier.i.notes
+          match: Other institutions number
+    - eventID:
+      - literal:
+          path: evidenceFor.atEvent.pid
+    - fieldNumber:
+      - literal:
+          path: evidenceFor.atEvent.id
+      - lookup:
+          endpoint: fieldcollection
+      - literal:
+          path: fieldNumber
+    - eventDate:
+      - literal:
+          path: evidenceFor.atEvent.eventDate
+    - verbatimEventDate:
+      - literal:
+          path: evidenceFor.atEvent.verbatimEventDate
+    - habitat:
+      - literal:
+          path: evidenceFor.atEvent.id
+      - lookup:
+          endpoint: fieldcollection
+      - literal:
+          path: habitat
+    - samplingProtocol:
+      - literal:
+          path: evidenceFor.atEvent.id
+      - lookup:
+          endpoint: fieldcollection
+      - literal:
+          path: samplingProtocol
+    - fieldNotes:
+      - literal:
+          path: evidenceFor.atEvent.id
+      - lookup:
+          endpoint: fieldcollection
+      - literal:
+          path: fieldNotes
+    - continent:
+      - literal:
+          path: evidenceFor.atEvent.atLocation.continent
+    - waterBody:
+      - literal:
+          path: evidenceFor.atEvent.atLocation.waterBody
+    - islandGroup:
+      - literal:
+          path: evidenceFor.atEvent.atLocation.islandGroup
+    - island:
+      - literal:
+          path: evidenceFor.atEvent.atLocation.island
+    - country:
+      - literal:
+          path: evidenceFor.atEvent.atLocation.country
+    - countryCode:
+      - country_code:
+          path: evidenceFor.atEvent.atLocation.country
+    - stateProvince:
+      - literal:
+          path: evidenceFor.atEvent.atLocation.stateProvince
+    - locality:
+      - continue_if:
+          path: restrictLocalityData
+          condition: false
+      - literal:
+          path: evidenceFor.atEvent.atLocation.locality
+    - verbatimElevation:
+      - literal:
+          path: evidenceFor.atEvent.id
+      - lookup:
+          endpoint: fieldcollection
+      - literal:
+          path: atLocation.verbatimElevation
+    - minimumElevationInMeters:
+      - literal:
+          path: evidenceFor.atEvent.id
+      - lookup:
+          endpoint: fieldcollection
+      - literal:
+          path: atLocation.minimumElevationInMeters
+    - maximumElevationInMeters:
+      - literal:
+          path: evidenceFor.atEvent.id
+      - lookup:
+          endpoint: fieldcollection
+      - literal:
+          path: atLocation.maximumElevationInMeters
+    - verbatimDepth:
+      - literal:
+          path: evidenceFor.atEvent.id
+      - lookup:
+          endpoint: fieldcollection
+      - literal:
+          path: atLocation.verbatimDepth
+    - minimumDepthInMeters:
+      - literal:
+          path: evidenceFor.atEvent.id
+      - lookup:
+          endpoint: fieldcollection
+      - literal:
+          path: atLocation.minimumDepthInMeters
+    - maximumDepthInMeters:
+      - literal:
+          path: evidenceFor.atEvent.id
+      - lookup:
+          endpoint: fieldcollection
+      - literal:
+          path: atLocation.maximumDepthInMeters
+    - minimumDistanceAboveSurfaceInMeters:
+      - literal:
+          path: evidenceFor.atEvent.id
+      - lookup:
+          endpoint: fieldcollection
+      - literal:
+          path: atLocation.minimumDistanceAboveSurfaceInMeters
+    - maximumDistanceAboveSurfaceInMeters:
+      - literal:
+          path: evidenceFor.atEvent.id
+      - lookup:
+          endpoint: fieldcollection
+      - literal:
+          path: atLocation.maximumDistanceAboveSurfaceInMeters
+    - decimalLatitude:
+      - continue_if:
+          path: restrictLocalityData
+          condition: false
+      - literal:
+          path: evidenceFor.atEvent.id
+      - lookup:
+          endpoint: fieldcollection
+      - literal:
+          path: atLocation.mappingDetails.i.decimalLatitude
+    - decimalLongitude:
+      - continue_if:
+          path: restrictLocalityData
+          condition: false
+      - literal:
+          path: evidenceFor.atEvent.id
+      - lookup:
+          endpoint: fieldcollection
+      - literal:
+          path: atLocation.mappingDetails.i.decimalLongitude
+    - geodeticDatum:
+      - continue_if:
+          path: restrictLocalityData
+          condition: false
+      - literal:
+          path: evidenceFor.atEvent.id
+      - lookup:
+          endpoint: fieldcollection
+      - literal:
+          path: atLocation.mappingDetails.i.geodeticDatum
+    - georeferenceSources:
+      - literal:
+          path: evidenceFor.atEvent.id
+      - lookup:
+          endpoint: fieldcollection
+      - literal:
+          path: atLocation.georeferenceSources
+    - identificationID:
+      - format_string:
+          string: tepapa:collection/identification/{}/{}
+          path: parent_id, identification.i.toTaxon.id
+    - identificationQualifier:
+      - identification_qualifier:
+          path: identification.i.toTaxon.id
+          qualifier: identification.i.qualifier
+    - verbatimIdentification:
+      - literal:
+          path: identification.i.qualifiedName
+    - typeStatus:
+      - format_string:
+          string: "{} of {}"
+          path: identification.i.typeStatus, identification.i.toTaxon.scientificName
+          required: true
+          strip: " (possible)"
+    - identifiedBy:
+      - literal:
+          path: identification.i.identifiedBy.title
+    - identifiedByID:
+      - literal:
+          path: identification.i.identifiedBy.id
+      - lookup:
+          endpoint: agent
+      - conditional:
+          path: related.i.contentUrl
+          condition_path: related.i.title
+          match: ORCID
+          fallback_match: Wikidata
+    - dateIdentified:
+      - literal:
+          path: identification.i.dateIdentified
+    - identificationRemarks:
+      - literal:
+          path: identification.i.typeStatus
+      - map_value:
+          epitype (possible): Epitype status uncertain
+          holotype (possible): Holotype status uncertain
+          isolectotype (possible): Isolectotype status uncertain
+          isoneotype (possible): Isoneotype status uncertain
+          isoparatype (possible): Isoparatype status uncertain
+          isosyntype (possible): Isosyntype status uncertain
+          isotype (possible): Isotype status uncertain
+          lectotype (possible): Lectotype status uncertain
+          neotype (possible): Neotype status uncertain
+          paralectotype (possible): Paralectotype status uncertain
+          paratype (possible): Paratype status uncertain
+          syntype (possible): Syntype status uncertain
+          topotype (possible): Topotype status uncertain
+          type (possible): Type status uncertain
+    - taxonID:
+      - literal:
+          path: identification.i.toTaxon.pid
+    - scientificName:
+      - literal:
+          path: identification.i.toTaxon.scientificName
+    - taxonRank:
+      - literal:
+          path: identification.i.toTaxon.rank
+    - scientificNameAuthorship:
+      - literal:
+          path: identification.i.toTaxon.id
+      - lookup:
+          endpoint: taxon
+      - literal:
+          path: scientificNameAuthorshipSummary
+    - higherClassification:
+      - literal:
+          path: identification.i.toTaxon.higherClassification
+    - family:
+      - literal:
+          path: identification.i.toTaxon.family
+    - subfamily:
+      - literal:
+          path: identification.i.toTaxon.subfamily
+    - genus:
+      - literal:
+          path: identification.i.toTaxon.genus
+    - subgenus:
+      - literal:
+          path: identification.i.toTaxon.subgenus
+    - specificEpithet:
+      - literal:
+          path: identification.i.toTaxon.species
+    - infraspecificEpithet:
+      - literal:
+          path: identification.i.toTaxon.id
+      - lookup:
+          endpoint: taxon
+      - literal:
+          path: subspecies
+    - vernacularName:
+      - literal:
+          path: identification.i
+      - collate_list:
+          path: toTaxon.vernacularName.i.title
+    - nomenclaturalCode:
+      - literal:
+          path: identification.i.toTaxon.id
+      - lookup:
+          endpoint: taxon
+      - literal:
+          path: nomenclaturalCode
+
+- label: identification
+  reference_column: OccurrenceID
+  primary_endpoint: object
+  explode: identification
+  reduce: identification
+  extend: null
+  fields:
+    - identificationID:
+      - format_string:
+          string: tepapa:collection/identification/{}/{}
+          path: parent_id, toTaxon.id
+    - identificationQualifier:
+      - identification_qualifier:
+          path: toTaxon.id
+          qualifier: qualifier
+    - verbatimIdentification:
+      - literal:
+          path: qualifiedName
+    - typeStatus:
+      - format_string:
+          string: "{} of {}"
+          path: typeStatus, toTaxon.scientificName
+          required: True
+          strip: " (possible)"
+    - identifiedBy:
+      - literal:
+          path: identifiedBy.title
+    - identifiedByID:
+      - literal:
+          path: identifiedBy.id
+      - lookup:
+          endpoint: agent
+      - conditional:
+          path: related.i.contentUrl
+          condition_path: related.i.title
+          match: ORCID
+          fallback_match: Wikidata
+    - dateIdentified:
+      - literal:
+          path: dateIdentified
+    - identificationRemarks:
+      - literal:
+          path: typeStatus
+      - map_value:
+          epitype (possible): Epitype status uncertain
+          holotype (possible): Holotype status uncertain
+          isolectotype (possible): Isolectotype status uncertain
+          isoneotype (possible): Isoneotype status uncertain
+          isoparatype (possible): Isoparatype status uncertain
+          isosyntype (possible): Isosyntype status uncertain
+          isotype (possible): Isotype status uncertain
+          lectotype (possible): Lectotype status uncertain
+          neotype (possible): Neotype status uncertain
+          paralectotype (possible): Paralectotype status uncertain
+          paratype (possible): Paratype status uncertain
+          syntype (possible): Syntype status uncertain
+          topotype (possible): Topotype status uncertain
+          type (possible): Type status uncertain
+    - taxonID:
+      - literal:
+          path: toTaxon.id
+    - scientificName:
+      - literal:
+          path: toTaxon.scientificName
+    - taxonRank:
+      - literal:
+          path: toTaxon.rank
+    - scientificNameAuthorship:
+      - literal:
+          path: toTaxon.id
+      - lookup:
+          endpoint: taxon
+      - literal:
+          path: scientificNameAuthorshipSummary
+    - higherClassification:
+      - literal:
+          path: toTaxon.higherClassification
+    - kingdom:
+      - literal:
+          path: toTaxon.id
+      - lookup:
+          endpoint: taxon
+      - literal:
+          path: kingdom
+    - phylum:
+      - literal:
+          path: toTaxon.id
+      - lookup:
+          endpoint: taxon
+      - literal:
+          path: phylum
+    - class:
+      - literal:
+          path: toTaxon.id
+      - lookup:
+          endpoint: taxon
+      - literal:
+          path: class
+    - order:
+      - literal:
+          path: toTaxon.id
+      - lookup:
+          endpoint: taxon
+      - literal:
+          path: order
+    - family:
+      - literal:
+          path: toTaxon.family
+    - subfamily:
+      - literal:
+          path: toTaxon.subfamily
+    - genus:
+      - literal:
+          path: toTaxon.genus
+    - subgenus:
+      - literal:
+          path: toTaxon.subgenus
+    - specificEpithet:
+      - literal:
+          path: toTaxon.species
+    - infraspecificEpithet:
+      - literal:
+          path: toTaxon.id
+      - lookup:
+          endpoint: taxon
+      - literal:
+          path: subspecies
+    - vernacularName:
+      - collate_list:
+          path: toTaxon.vernacularName.i.title
+    - nomenclaturalCode:
+      - literal:
+          path: toTaxon.id
+      - lookup:
+          endpoint: taxon
+      - literal:
+          path: nomenclaturalCode
+
+- label: multimedia
+  reference_column: OccurrenceID
+  primary_endpoint: object
+  explode: hasRepresentation
+  reduce: null
+  extend: null
+  requires:
+    - path: hasRepresentation.i.rights.allowsDownload
+      condition: true
+    - path: restrictLocalityData
+      condition: false
+  fields:
+    - type:
+      - literal:
+          path: hasRepresentation.i.additionalType
+      - must_match:
+          terms: StillImage, Sound, MovingImage
+    - format:
+      - hardcoded:
+          value: image/jpeg
+    - identifier:
+      - literal:
+          path: hasRepresentation.i.previewUrl
+    - references:
+      - format_string:
+          string: https://collections.tepapa.govt.nz/object/{}
+          path: id
+    - title:
+      - literal:
+          path: title
+    - publisher:
+      - hardcoded:
+          value: Museum of New Zealand Te Papa Tongarewa
+    - license:
+      - literal:
+          path: hasRepresentation.i.rights.title
+    - rightsHolder:
+      - literal:
+          path: hasRepresentation.i.rights.title
+      - map_value:
+          No Known Copyright Restrictions: null
+          CC BY-NC-ND 4.0: Museum of New Zealand Te Papa Tongarewa
+          CC BY 4.0: Museum of New Zealand Te Papa Tongarewa
+          All Rights Reserved: Museum of New Zealand Te Papa Tongarewa

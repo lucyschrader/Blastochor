@@ -1,0 +1,57 @@
+---
+required:
+  - api_key_env
+  - mapping_file
+  - input_dir
+  - output_dir
+  - mode
+  - quiet
+  - base_url
+  - endpoint
+  - timeout
+  - attempts
+optional:
+  - use_skiplist
+  - skipfile
+  - min_image_size
+  - max_list_size
+  - clean_newlines
+  - coordinate_workaround
+  - restrict_locality
+  - emufile
+group:
+  - parent_label
+  - parent_fields
+  - child_fields
+  - ungrouped_fields
+mode:
+  list:
+    - key: list_source
+      required: true
+  search:
+    - key: query
+      required: true
+    - key: sort
+      required: false
+    - key: size
+      required: false
+    - key: record_limit
+      required: false
+    - key: filter
+      required: false
+  scroll:
+    - key: query
+      required: true
+    - key: sort
+      required: false
+    - key: size
+      required: false
+    - key: record_limit
+      required: false
+    - key: filter
+      required: false
+filter:
+  - collection
+  - allows_download
+  - keyword_fields
+  - keyword_values

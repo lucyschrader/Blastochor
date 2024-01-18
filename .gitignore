@@ -1,22 +1,15 @@
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
+# venv and pycharm
+Lib/
+Scripts/
 .idea/
-
-# cache
+pyvenv.cfg
 __pycache__/
-
-# Working files
-/_work*
-*.prof
-blastochor/projects/_*.yaml
-blastochor/resources/mapfiles/_*.yaml
 
 # Input and output files
 input_files/
 output_files/
+
+# Internal project files
+src/projects/_*.yaml
+src/resources/mapfiles/_*.yaml
+src/resources/collectionevents.xml
