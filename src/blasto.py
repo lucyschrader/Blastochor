@@ -1,5 +1,5 @@
 import click
-from src.setup.Settings import read_config, write_config, setup_project, update_query, add_limit_to_config, update_settings
+from src.setup.Settings import read_config, write_config, setup_project, update_query, add_limit_to_config, update_settings, update_list_source
 from src.setup.InputList import read_input_list
 from src.monitoring.Stats import stats
 from src.setup.Mapper import Mapping
@@ -47,11 +47,13 @@ def blasto():
 @click.command()
 @click.option('--project', default='none', help='name of pre-defined project')
 @click.option('--query', default='none', help='override query string in config')
+@click.option('--listsource', default='none', help='override list source in config')
 @click.option('--limit', default=-1, help='override max record limit in config when testing')
 @click.option('--profiler', default=False, help='run with cProfile')
-def cli(project, query, limit, profiler):
+def cli(project, query, listsource, limit, profiler):
     setup_project(project)
     update_query(query)
+    update_list_source(listsource)
     add_limit_to_config(limit)
     update_settings()
 

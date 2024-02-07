@@ -150,27 +150,31 @@ class MapValidator():
                         self.report.append(message)
 
                 valid_params = self.functions[function_name]["parameters"]
-                field_params = list(function[function_name].keys())
-                for param_key in field_params:
-                    self.validate_parameter(field_name,
-                                            field_index,
-                                            function_name,
-                                            valid_params,
-                                            param_key)
-                if valid_params:
-                    for valid_param in valid_params:
-                        if valid_param.get("required"):
-                            self.check_for_required_params(field_name,
-                                                           field_index,
-                                                           function_name,
-                                                           valid_param,
-                                                           field_params)
+                if function.get(function_name):
+                    field_params = list(function[function_name].keys())
+                    for param_key in field_params:
+                        self.validate_parameter(field_name,
+                                                field_index,
+                                                function_name,
+                                                valid_params,
+                                                param_key)
+                    if valid_params:
+                        for valid_param in valid_params:
+                            if valid_param.get("required"):
+                                self.check_for_required_params(field_name,
+                                                               field_index,
+                                                               function_name,
+                                                               valid_param,
+                                                               field_params)
+                else:
+                    self.report.append("Field {i} ({n}): Function has no parameters".format(i=field_index,
+                                                                                            n=field_name))
 
             else:
                 self.fail = True
-                self.report.append("Field {i} ({n}): Map function {f} is not a valid function".format(i=field_index,
-                                                                                                      n=field_name,
-                                                                                                      f=function_name))
+                self.report.append("Field {i} ({n}): Function {f} is not a valid function".format(i=field_index,
+                                                                                                  n=field_name,
+                                                                                                  f=function_name))
 
     def validate_parameter(self, field_name, field_index, function_name, valid_params, param_key):
         if valid_params:

@@ -63,6 +63,11 @@ def update_query(query):
         write_config("query", query)
 
 
+def update_list_source(list_source):
+    if list_source != "none":
+        write_config("list_source", list_source)
+
+
 def add_limit_to_config(limit):
     if limit != -1:
         write_config("record_limit", limit)
@@ -185,7 +190,7 @@ def set_api_key():
     if read_config("api_key_env"):
         try:
             write_config("api_key", os.environ.get(read_config("api_key_env")))
-        except KeyError:
+        except ValueError:
             break_on_settings_error("No API key found in environment")
     else:
         break_on_settings_error("API key required to live")

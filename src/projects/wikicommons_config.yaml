@@ -42,7 +42,7 @@ timeout: 10
 attempts: 3
 
 # List mode settings
-list_source: wikicommons-laughingowl.csv
+list_source: wikicommons-plantago.csv
 
 # Search/scroll mode settings
 record_limit: null
