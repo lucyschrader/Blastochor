@@ -106,6 +106,9 @@ class FunctionProcessor:
                             subfunction_reprocess = subfunction_container.reprocess
                             subfunction_complete = subfunction_container.complete
 
+                            if isinstance(value, list):
+                                value = concatenate(value)
+
                         self.output_value.append(value)
                         value_index += 1
 
@@ -201,8 +204,8 @@ class FunctionProcessor:
                 self.output_value = hardcode_value(value)
 
             case "identification_qualifier":
-                taxon_path = self.params["path"]
-                qualifier_path = self.params["qualifier"]
+                taxon_path = self.params["taxon_path"]
+                qualifier_path = self.params["qualifier_path"]
                 ordinal = self.params.get("ordinal")
                 if not ordinal and (ordinal != 0):
                     ordinal = self.output_row.explode.get("explode_ordinal")

@@ -4,6 +4,7 @@
   primary_endpoint: object
   explode: null
   reduce: null
+  requires: null
   extend:
     - endpoint: object
       path: id
@@ -74,7 +75,7 @@
       - literal:
           path: restrictLocalityData
       - map_value:
-          true: precise location information not given for threatened species
+          true: precise location information not given for threatened species and associated specimens
     - dataGeneralizations:
       - literal:
           path: restrictLocalityData
@@ -282,8 +283,8 @@
           path: parent_id, identification.i.toTaxon.id
     - identificationQualifier:
       - identification_qualifier:
-          path: identification.i.toTaxon.id
-          qualifier: identification.i.qualifier
+          taxon_path: identification.i.toTaxon.id
+          qualifier_path: identification.i.qualifier
     - verbatimIdentification:
       - literal:
           path: identification.i.qualifiedName
@@ -327,9 +328,6 @@
           syntype (possible): Syntype status uncertain
           topotype (possible): Topotype status uncertain
           type (possible): Type status uncertain
-    - taxonID:
-      - literal:
-          path: identification.i.toTaxon.pid
     - scientificName:
       - literal:
           path: identification.i.toTaxon.scientificName
@@ -387,6 +385,7 @@
   explode: identification
   reduce: identification
   extend: null
+  requires: null
   fields:
     - identificationID:
       - format_string:
@@ -394,8 +393,8 @@
           path: parent_id, toTaxon.id
     - identificationQualifier:
       - identification_qualifier:
-          path: toTaxon.id
-          qualifier: qualifier
+          taxon_path: toTaxon.id
+          qualifier_path: qualifier
     - verbatimIdentification:
       - literal:
           path: qualifiedName
@@ -439,9 +438,6 @@
           syntype (possible): Syntype status uncertain
           topotype (possible): Topotype status uncertain
           type (possible): Type status uncertain
-    - taxonID:
-      - literal:
-          path: toTaxon.id
     - scientificName:
       - literal:
           path: toTaxon.scientificName

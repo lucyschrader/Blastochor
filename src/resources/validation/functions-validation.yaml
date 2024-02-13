@@ -84,6 +84,17 @@ concatenate:
   display_name: combine list
   description: Combine a list of values together into one string. Done automatically before writing out.
   parameters: null
+continue_if:
+  function_name: continue_if
+  display_name: continue if
+  description: Only run the following functions if a certain requirement is met.
+  parameters:
+    - parameter: path
+      required: true
+      multiple_allowed: false
+    - parameter: condition
+      required: true
+      multiple_allowed: false
 country_code:
   function_name: country_code
   display_name: country code

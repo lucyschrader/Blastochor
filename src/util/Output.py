@@ -258,6 +258,7 @@ def remove_object_locality(restricted_objects):
         if not read_config("quiet"):
             print("Removing locality information from related record {}".format(record_pid))
         records.records[record_pid].data["evidenceFor"]["atEvent"]["atLocation"]["locality"] = None
+        records.records[record_pid].data["restrictLocalityData"] = True
 
 
 def remove_object_images(restricted_objects):
