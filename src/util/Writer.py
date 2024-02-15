@@ -14,6 +14,7 @@ class WriteFile():
     def generate_filename(self):
         path = "{}/".format(read_config("output_dir"))
         name = "{}-export.csv".format(self.label)
+        stats.export_filenames.append(name)
         return path + name
 
     def write_header_row(self, fieldnames):

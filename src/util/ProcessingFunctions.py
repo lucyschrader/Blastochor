@@ -267,9 +267,9 @@ class FunctionProcessor:
 
             case "use_group_labels":
                 label = None
-                if self.output_row.group_row == "parent":
+                if self.output_row.group_role == "parent":
                     label = self.params["parent"]
-                elif self.output_row.group_row == "child":
+                elif self.output_row.group_role == "child":
                     label = self.params["child"]
                 elif not self.output_row.group_role:
                     label = self.params["other"]
@@ -505,6 +505,9 @@ def format_string(data, string=None, paths=None, required=False, strip=None, ord
                 values.append(record_id)
             else:
                 values.append("")
+        elif path == "explode_ordinal":
+            # Used for Google Arts orderid (index starts at 1)
+            values.append(ordinal + 1)
         else:
             value = literal(data=data, path=path, ordinal=ordinal)
             if not value:
@@ -590,20 +593,24 @@ def process_quality_score(data):
     # Used to assign priority in Google Arts & Culture
     priority = None
 
-    quality_score = data.get("_meta").get("qualityScore")
-    if quality_score:
-        score = quality_score - stats.quality_score[0]
-        upper = stats.quality_score[1] - stats.quality_score[0]
+    if stats.quality_score_lower and stats.quality_score_upper:
+        try:
+            quality_score = data["_meta"]["qualityScore"]
+            score = quality_score - stats.quality_score_lower
+            upper = stats.quality_score_upper - stats.quality_score_lower
 
-        score_percentage = score / upper * 100
-        score_percentage = 100 - score_percentage
+            score_percentage = score / upper * 100
+            score_percentage = 100 - score_percentage
 
-        priority = floor(score_percentage * 3)
-        modifier = random.randint(-15, 15)
-        priority = priority + modifier
+            priority = floor(score_percentage * 3)
+            modifier = random.randint(-15, 15)
+            priority = priority + modifier
 
-        if priority <= 0:
-            priority = random.randint(1, 200)
+            if priority <= 0:
+                priority = random.randint(1, 200)
+
+        except KeyError:
+            pass
 
     return priority
 

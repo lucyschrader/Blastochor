@@ -1,0 +1,167 @@
+---
+- label: googleart
+  reference_column: null
+  primary_endpoint: object
+  explode: hasRepresentation
+  reduce: null
+  requires: null
+  extend:
+    - endpoint: place
+      path: production.i.spatial.id
+      for_label: null
+  fields:
+    - itemid:
+      - literal:
+          path: pid
+    - subitemid:
+      - format_string:
+          string: "{}.{}"
+          path: pid, hasRepresentation.i.id
+    - orderid:
+      - format_string:
+          string: "{}"
+          path: explode_ordinal
+    - customtext:registrationid:
+      - literal:
+          path: identifier
+    - title:
+      - literal:
+          path: title
+      - truncate:
+          length: 100
+          suffix: ...
+    - description:
+      - literal:
+           path: description
+      - clean_html: null
+    - creator:
+      - collate_list:
+          path: production.i
+      - for_each:
+        - format_string:
+            string: "{} ({})"
+            path: contributor.title, role
+            required: true
+        - fallback:
+          - literal:
+              path: production.i.contributor.title
+    - location:placename:
+      - literal:
+          path: production.i.spatial.prefLabel
+    - location:lat:
+      - literal:
+          path: production.i.spatial.id
+      - lookup:
+          endpoint: place
+      - literal:
+          path: geoLocation.lat
+    - location:long:
+      - literal:
+          path: production.i.spatial.id
+      - lookup:
+          endpoint: place
+      - literal:
+          path: geoLocation.lon
+    - dateCreated:start:
+      - literal:
+          path: production.i.createdDate
+    - dateCreated:display:
+      - literal:
+          path: production.i.verbatimCreatedDate
+    - rights:
+      - literal:
+          path: hasRepresentation.i.rights.title
+    - format:
+      - literal:
+          path: observedDimension.i.title
+    - medium:
+      - literal:
+          path: isMadeOfSummary
+    - subject:
+      - collate_list:
+          path: depicts.i.title, influencedBy.i.title
+    - art=support:
+      - collate_list:
+          path: isMadeOf.i.title
+      - must_match:
+          terms: canvas, paper, plaster, cardboard, ceramic, wood, clay
+    - art=depictedLocation:
+      - conditional:
+          path: depicts.i.title
+          condition_path: depicts.i.type
+          match: Place
+    - art=depictedPerson:
+      - conditional:
+          path: depicts.i.title
+          condition_path: depicts.i.type
+          match: Person
+    - art=genre:
+      - collate_list:
+          path: depicts.i.title
+      - map_value:
+          Landscapes (Representations): landscape
+          Landscape paintings: landscape
+          Landscape prints: landscape
+          Landscape photographs: landscape
+          Portraits: portrait
+          Self-portraits: portrait
+          Portrait photographs: portrait
+          Portrait drawings: portrait
+          Portrait paintings: portrait
+          Portrait prints: portrait
+          Still lifes: still life
+          still lifes: still life
+          Still life paintings: still life
+          Still life drawings: still life
+          Still life prints: still life
+          Still life photographs: still life
+    - customtext:specimenType:
+      - literal:
+          path: specimenType
+    - customtext:dateCollected:
+      - literal:
+          path: evidenceFor.atEvent.eventDate
+    - customtext:creator.collector:
+      - collate_list:
+          path: evidenceFor.atEvent.recordedBy.i.title
+    - customtext:locationCollected:
+      - literal:
+          path: evidenceFor.atEvent.atLocation.title
+    - customtext:dateIdentified:
+      - literal:
+          path: identification.i.dateIdentified
+    - customtext:creator.identifier:
+      - literal:
+          path: identification.i.identifiedBy.title
+    - customtext:qualifiedName:
+      - literal:
+          path: identification.i.qualifiedName
+    - customtext:commonName:
+      - literal:
+          path: identification.i.toTaxon.vernacularName.i.title
+    - provenance:
+      - literal:
+          path: creditLine
+    - priority:
+      - set_priority: null
+    - filetype:
+      - use_group_labels:
+          parent: sequence
+          child: image
+          other: image
+    - filespec:
+      - format_string:
+          string: Te Papa {} {}
+          path: id, hasRepresentation.i.id
+      - create_filename:
+          suffix: jpg
+    - relation:url:
+      - format_string:
+          string: https://collections.tepapa.govt.nz/object/{}
+          path: id
+    - relation:text:
+      - hardcoded:
+          value: Te Papa Collections Online
+    - downloadUrl:
+      - literal:
+          path: hasRepresentation.i.contentUrl

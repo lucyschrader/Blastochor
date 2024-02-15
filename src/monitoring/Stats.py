@@ -28,8 +28,10 @@ class ApplicationStats():
         self.extension_records_count = 0
 
         self.file_write_counts = {}
+        self.export_filenames = []
 
-        self.quality_score = (0, 0)
+        self.quality_score_lower = None
+        self.quality_score_upper = None
 
     def mark_time(self, task):
         timestamp = datetime.now()

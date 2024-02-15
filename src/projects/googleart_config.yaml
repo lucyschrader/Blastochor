@@ -1,0 +1,59 @@
+---
+# Blastochor config for Google Arts & Culture dataset
+# Don't change these values - create a new project instead
+
+# Setup
+api_key_env: TPAK-GOOG
+mapping_file: googleartsandculture.yaml
+input_dir: input_files
+output_dir: output_files
+use_skiplist: False
+skipfile: null
+min_image_size: 0
+max_list_size: 100
+clean_newlines: true
+coordinate_workaround: false
+use_quality_score: true
+
+# Group rows
+group_rows: true
+parent_label: sequence
+parent_fields:
+  include: false
+  fields: subitemid, orderid, rights, filespec
+child_fields:
+  include: true
+  fields: itemid, subitemid, orderid, rights, filetype, filespec
+ungrouped_fields:
+  include: false
+  fields: subitemid, orderid
+
+# Sensitive data protection
+restrict_locality: true
+
+# Incorporate EMu data
+emufile: null
+
+# Run
+mode: scroll
+quiet: true
+base_url: https://data.tepapa.govt.nz/collection
+endpoint: object
+timeout: 5
+attempts: 3
+
+# List mode settings
+list_source: null
+
+# Search/scroll mode settings
+record_limit: 1000
+size: 1000
+
+query: "*"
+sort: -_meta.modified
+
+filter:
+  collection: Art
+  allows_download: true
+  keyword_fields: null
+  keyword_values: null

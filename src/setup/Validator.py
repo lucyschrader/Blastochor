@@ -131,14 +131,20 @@ class MapValidator():
             field_index += 1
 
     def validate_function(self, field_name, field_index, function):
-        # Check that the field's functions are valid and has suitable parameters
         function_name = list(function.keys())[0]
+        # Check that the field's functions are valid and has suitable parameters
         if function_name == "for_each":
             message = "Field {i} ({n}): Function for_each contains subfunctions".format(i=field_index,
                                                                                         n=field_name)
             self.report.append(message)
             for subfunction in function[function_name]:
                 self.validate_function(field_name, field_index, subfunction)
+        elif function_name == "fallback":
+            message = "Field {i} ({n}): Function fallback contains fallback functions".format(i=field_index,
+                                                                                              n=field_name)
+            self.report.append(message)
+            for fallback_function in function[function_name]:
+                self.validate_function(field_name, field_index, fallback_function)
         else:
             if function_name in self.functions:
                 # Country code function requires file to be loaded

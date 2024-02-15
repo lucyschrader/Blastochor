@@ -43,6 +43,8 @@ def blasto():
     stats.mark_time("end")
     stats.report()
 
+    return stats.export_filenames
+
 
 @click.command()
 @click.option('--project', default='none', help='name of pre-defined project')

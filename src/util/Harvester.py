@@ -205,6 +205,8 @@ class Harvester():
     def save_record(self, record, endpoint, label):
         new_record = Record(data=record, endpoint=endpoint)
         records.append(new_record)
+        if read_config("use_quality_score"):
+            save_quality_score(record)
         if label == read_config("corefile"):
             self.check_for_triggers(new_record)
 
@@ -296,3 +298,18 @@ class Harvester():
                 if self.duplicate_check(record, extension_endpoint):
                     self.save_record(record=record, endpoint=extension_endpoint, label=None)
                     stats.extension_records_count += 1
+
+
+def save_quality_score(record):
+    try:
+        record_quality_score = record["_meta"]["qualityScore"]
+        if not stats.quality_score_lower:
+            stats.quality_score_lower = record_quality_score
+        if not stats.quality_score_upper:
+            stats.quality_score_upper = record_quality_score
+        if record_quality_score < stats.quality_score_lower:
+            stats.quality_score_lower = record_quality_score
+        if record_quality_score > stats.quality_score_upper:
+            stats.quality_score_upper = record_quality_score
+    except KeyError:
+        pass
