@@ -1,6 +1,7 @@
 from datetime import datetime
 from math import floor
 from src.setup.Settings import read_config
+from src.datastore.Memo import memo
 
 
 class ApplicationStats():
@@ -26,6 +27,7 @@ class ApplicationStats():
         self.initial_record_count = 0
         self.source_list_count = 0
         self.extension_records_count = 0
+        self.modified_file_count = None
 
         self.file_write_counts = {}
         self.export_filenames = []
@@ -53,7 +55,7 @@ class ApplicationStats():
             case "processing end":
                 self.processing_end = timestamp
 
-    def report(self):
+    def process_runtimes(self):
         # Record how long script took to run in total
         delta = self.app_end - self.app_start
         self.run_time = datetime_to_string(delta.total_seconds())
@@ -70,7 +72,14 @@ class ApplicationStats():
         delta = self.processing_end - self.processing_start
         self.processing_time = datetime_to_string(delta.total_seconds())
 
-        self.print_stats()
+    def count_recently_modified_records(self):
+        recently_modified_records = [memo[i] for i in list(memo.keys()) if memo[i]["modified_recently"]]
+        object_count = len([i for i in recently_modified_records if i["endpoint"] == "object"])
+        agent_count = len([i for i in recently_modified_records if i["endpoint"] == "agent"])
+        taxon_count = len([i for i in recently_modified_records if i["endpoint"] == "taxon"])
+        self.modified_file_count = {"object": object_count,
+                                    "agent": agent_count,
+                                    "taxon": taxon_count}
 
     def print_stats(self):
         print("Script ran in {}".format(self.run_time))
@@ -89,6 +98,15 @@ class ApplicationStats():
 
         for label in self.file_write_counts.keys():
             print("Wrote {n} records to the {l} file".format(n=self.file_write_counts.get(label), l=label))
+
+        print("Export analysis:")
+        for endpoint in list(self.modified_file_count.keys()):
+            count = self.modified_file_count[endpoint]
+            days = read_config("days_since_modified")
+            count_string = "{n} {e} records retrieved updated in the last {x} days".format(n=count,
+                                                                                           e=endpoint,
+                                                                                           x=days)
+            print("\t{}".format(count_string))
 
 
 def datetime_to_string(seconds):

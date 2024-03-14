@@ -1,7 +1,10 @@
 import click
-from src.setup.Settings import read_config, write_config, setup_project, update_query, add_limit_to_config, update_settings, update_list_source
+from src.setup.Settings import (read_config, write_config, setup_project, update_query, add_limit_to_config,
+                                update_settings, update_list_source)
 from src.setup.InputList import read_input_list
 from src.monitoring.Stats import stats
+from src.util.ExportHandler import create_export_dir, delete_old_exports
+from src.monitoring.ExportReport import generate_export_report, clear_old_reports
 from src.setup.Mapper import Mapping
 from src.util.Harvester import Harvester
 
@@ -11,6 +14,7 @@ from src.util.Harvester import Harvester
 # Processed data is written out to one or more files
 def blasto():
     print("Looks like team blasto is blasting off again")
+    delete_old_exports()
 
     # Start stats
     stats.mark_time("start")
@@ -32,6 +36,9 @@ def blasto():
         from src.util.CoordinateWorkaround import apply_coordinate_workaround
         apply_coordinate_workaround()
 
+    # Create export directory
+    create_export_dir()
+
     # Write out harvested and processed data
     mapping = read_config("mapping")
     stats.mark_time("processing start")
@@ -41,9 +48,7 @@ def blasto():
 
     # Stop stats and write results
     stats.mark_time("end")
-    stats.report()
-
-    return stats.export_filenames
+    generate_export_report()
 
 
 @click.command()
@@ -52,11 +57,13 @@ def blasto():
 @click.option('--listsource', default='none', help='override list source in config')
 @click.option('--limit', default=-1, help='override max record limit in config when testing')
 @click.option('--profiler', default=False, help='run with cProfile')
-def cli(project, query, listsource, limit, profiler):
+@click.option('--exportid', default=None, help='provide an id to use when writing out script results')
+def cli(project, query, listsource, limit, profiler, exportid):
     setup_project(project)
     update_query(query)
     update_list_source(listsource)
     add_limit_to_config(limit)
+    write_config("export_id", exportid)
     update_settings()
 
     if profiler:

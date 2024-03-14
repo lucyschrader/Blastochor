@@ -101,7 +101,7 @@
         - conditional:
             path: related.i.contentUrl
             condition_path: related.i.title
-            match: ORCID
+            match: ORCID|ORCiD
             fallback_match: Wikidata
     - sex:
       - literal:
@@ -305,7 +305,7 @@
       - conditional:
           path: related.i.contentUrl
           condition_path: related.i.title
-          match: ORCID
+          match: ORCID|ORCiD
           fallback_match: Wikidata
     - dateIdentified:
       - literal:
@@ -415,7 +415,7 @@
       - conditional:
           path: related.i.contentUrl
           condition_path: related.i.title
-          match: ORCID
+          match: ORCID|ORCiD
           fallback_match: Wikidata
     - dateIdentified:
       - literal:

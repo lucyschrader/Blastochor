@@ -1,8 +1,8 @@
-import json
+from datetime import datetime
 
 from src.setup.Settings import read_config
 from src.monitoring.Stats import stats
-from src.datastore.Memo import memo, format_pid, add_to_memo, update_memo
+from src.datastore.Memo import memo, format_pid, retrieve_from_memo, add_to_memo, update_memo
 
 
 class Record():
@@ -17,6 +17,8 @@ class Record():
 
         if read_config("compare_quality_score"):
             self.check_quality_score()
+
+        self.check_modified_since()
 
         if not read_config("quiet"):
             print("Record created: {e}, {i}".format(e=self.endpoint, i=self.irn))
@@ -56,3 +58,15 @@ class Record():
                 else:
                     if quality_score > stats.quality_score_upper:
                         stats.quality_score_upper = quality_score
+
+    def check_modified_since(self):
+        if not retrieve_from_memo(self.pid)["checked_if_modified"]:
+            date_modified = self.data["_meta"]["modified"]
+            date_modified_datestamp = datetime.fromisoformat(date_modified.replace("Z", ""))
+            if date_modified_datestamp >= read_config("check_modified_since"):
+                modified_recently = True
+            else:
+                modified_recently = False
+
+            update_memo(self.pid, "check_if_modified", True)
+            update_memo(self.pid, "modified_recently", modified_recently)

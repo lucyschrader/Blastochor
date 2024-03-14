@@ -12,10 +12,14 @@ class WriteFile():
         self.writer = csv.writer(self.file, delimiter=",")
 
     def generate_filename(self):
-        path = "{}/".format(read_config("output_dir"))
-        name = "{}-export.csv".format(self.label)
-        stats.export_filenames.append(name)
-        return path + name
+        output_dir = read_config("output_dir")
+        export_dir = read_config("export_filename")
+        write_filename = "{}-export.csv".format(self.label)
+        stats.export_filenames.append(write_filename)
+        write_location = "{d}/{e}/{f}".format(d=output_dir,
+                                              e=export_dir,
+                                              f=write_filename)
+        return write_location
 
     def write_header_row(self, fieldnames):
         self.writer.writerow(fieldnames)

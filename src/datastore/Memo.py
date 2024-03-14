@@ -33,7 +33,9 @@ def add_to_memo(status=None, irn=None, endpoint=None, label=None, extension=None
             "write_to": [],
             "structure": {},
             "is_extension": extension,
-            "media_irns": []
+            "media_irns": [],
+            "checked_if_modified": False,
+            "modified_recently": False
         }
 
         if label:

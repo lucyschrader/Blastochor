@@ -1,6 +1,7 @@
 import os
 import yaml
 import json
+from datetime import datetime, timedelta
 from src.setup.Validator import ConfigValidator
 
 
@@ -19,7 +20,8 @@ defaults = {"mapfile": "default.yaml",
             "endpoint": "object",
             "query": "*",
             "timeout": 5,
-            "attempts": 3}
+            "attempts": 3,
+            "days_since_modified": 7}
 
 
 def read_config(key):
@@ -35,16 +37,17 @@ def write_config(key, value):
 def setup_project(project):
     if project != "none":
         config_file = "projects/{}_config.yaml".format(project)
+
     else:
         config_file = "config.yaml"
 
     if not os.path.exists(config_file):
         config_file = "projects/default.yaml"
 
-    read_config_file(config_file)
+    read_config_file(config_file, project)
 
 
-def read_config_file(config_file):
+def read_config_file(config_file, project):
     global config
     try:
         with open(config_file, "r", encoding="utf-8") as f:
@@ -56,6 +59,9 @@ def read_config_file(config_file):
     config_validator = ConfigValidator(config)
     if config_validator.fail:
         break_on_settings_error("Config validation failed")
+
+    if project != "none":
+        write_config("project_name", project)
 
 
 def update_query(query):
@@ -81,6 +87,8 @@ def update_settings():
     set_skiplist()
     set_endpoint()
     load_country_codes()
+    set_check_modified()
+    format_export_string()
 
     # API parameters
     set_api_key()
@@ -183,6 +191,28 @@ def load_country_codes():
     except IOError:
         if not read_config("quiet"):
             print("No country code file found")
+
+
+def set_check_modified():
+    days_since_modified = read_config("days_since_modified")
+    if not days_since_modified:
+        days_since_modified = defaults["days_since_modified"]
+        write_config("days_since_modified", days_since_modified)
+
+    check_modified_since = datetime.today() - timedelta(days=days_since_modified)
+    write_config("check_modified_since", check_modified_since)
+
+
+def format_export_string():
+    project_name = read_config("project_name")
+    export_id = read_config("export_id")
+    export_filename_string = datetime.now().strftime("%Y%m%d-%H%M%S")
+    if project_name:
+        export_filename_string += "-{}".format(project_name)
+    if export_id:
+        export_filename_string += "-{}".format(export_id)
+
+    write_config("export_filename", export_filename_string)
 
 
 def set_api_key():

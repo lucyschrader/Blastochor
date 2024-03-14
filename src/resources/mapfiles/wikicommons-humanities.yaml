@@ -1,0 +1,109 @@
+---
+- label: wikicommons
+  reference_column: null
+  primary_endpoint: object
+  explode: hasRepresentation
+  reduce: null
+  extend:
+    - endpoint: agent
+      path: production.i.contributor.id
+      for_label: null
+    - endpoint: place
+      path: production.i.spatial.id
+      for_label: null
+  fields:
+    - filename:
+      - format_string:
+          string: "{} {} Te Papa {} {}"
+          path: identifier, title, id, hasRepresentation.i.id
+      - create_filename:
+          suffix: jpg
+    - filenamePath:
+      - hardcoded:
+          value: null
+    - wikitext:
+      - hardcoded:
+          value: null
+    - irn:
+      - literal:
+          path: id
+    - title:
+      - literal:
+          path: title
+    - description:
+      - literal:
+          path: description
+      - clean_html: null
+    - author:
+      - collate_list:
+          path: production.i
+      - for_each:
+        - format_string:
+            string: "{} ({})"
+            path: contributor.title, role
+            required: true
+        - fallback:
+          - literal:
+              path: production.i.contributor.title
+    - authorQID:
+      - collate_list:
+          path: production.i.contributor.id
+      - for_each:
+        - lookup:
+            endpoint: agent
+        - conditional:
+            path: related.i.contentUrl
+            condition_path: related.i.title
+            match: Wikidata
+    - madeOf:
+      - collate_list:
+          path: isMadeOf.i.title
+    - depicts:
+        - collate_list:
+            path: depicts.i.title
+    - collection:
+      - literal:
+          path: collectionLabel
+    - date:
+      - literal:
+          path: production.i.createdDate
+    - placeCreated:
+      - literal:
+          path: production.i.spatial.id
+      - lookup:
+          endpoint: place
+      - literal:
+          path: title
+    - mediaIrn:
+      - literal:
+          path: hasRepresentation.i.id
+    - rightsTitle:
+      - literal:
+          path: hasRepresentation.i.rights.title
+    - copyrightStatusQID:
+      - literal:
+          path: hasRepresentation.i.rights.title
+      - map_value:
+          No Known Copyright Restrictions: Q19652
+          CC BY 4.0: Q50423863
+    - copyrightLicenseQID:
+      - literal:
+          path: hasRepresentation.i.rights.title
+      - map_value:
+          CC BY 4.0: Q20007257
+    - creditLine:
+      - literal:
+          path: creditLine
+    - institution:
+      - hardcoded:
+          value: Museum of New Zealand Te Papa Tongarewa
+    - institutionQID:
+      - hardcoded:
+          value: Q915603
+    - references:
+      - format_string:
+          string: https://collections.tepapa.govt.nz/object/{}
+          path: id
+    - identifier:
+      - literal:
+          path: identifier
