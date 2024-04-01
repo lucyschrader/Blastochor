@@ -51,6 +51,6 @@ def delete_old_exports():
 def compare_timestamps(last_modified):
 	now = datetime.now()
 	delta = now - last_modified
-	if delta.days > 60:
+	if delta.days > 14:
 		return True
 	return False

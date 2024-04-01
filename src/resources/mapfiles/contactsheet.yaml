@@ -1,0 +1,88 @@
+---
+- label: contactsheet
+  reference_column: null
+  primary_endpoint: object
+  explode: hasRepresentation
+  reduce: null
+  extend:
+    - endpoint: agent
+      path: production.i.contributor.id
+      for_label: null
+    - endpoint: agent
+      path: depicts.i.id
+      for_label: null
+  requires: null
+  fields:
+    - title:
+      - literal:
+          path: title
+    - identifier:
+      - literal:
+          path: identifier
+    - rights:
+      - literal:
+          path: hasRepresentation.i.rights.title
+    - description:
+      - literal:
+          path: description
+      - clean_html: null
+    - creator:
+      - collate_list:
+          path: production.i.contributor.title
+    - creatorID:
+      - collate_list:
+          path: production.i.contributor.id
+    - creatorQID:
+      - collate_list:
+          path: production.i.contributor.id
+      - for_each:
+        - lookup:
+            endpoint: agent
+        - conditional:
+            path: related.i.contentUrl
+            condition_path: related.i.title
+            match: Wikidata
+    - tags:
+      - collate_list:
+          path: depicts.i.title, refersTo.i.title, isTypeOf.i.title, intendedFor.i.title, isAbout.i.title, influencedBy.i.title
+    - placeCreated:
+      - literal:
+          path: production.i.spatial.title
+    - depicts:
+      - conditional:
+          path: depicts.i.title
+          condition_path: depicts.i.type
+          match: Person
+    - depictsID:
+      - conditional:
+          path: depicts.i.id
+          condition_path: depicts.i.type
+          match: Person
+    - depictsQID:
+      - conditional:
+          path: depicts.i.id
+          condition_path: depicts.i.type
+          match: Person
+      - for_each:
+          - lookup:
+              endpoint: agent
+          - conditional:
+              path: related.i.contentUrl
+              condition_path: related.i.title
+              match: Wikidata
+    - record_irn:
+      - literal:
+          path: id
+    - media_irn:
+      - literal:
+          path: hasRepresentation.i.id
+    - filename:
+      - format_string:
+          string: Te Papa {} {}
+          path: id, hasRepresentation.i.id
+      - create_filename:
+          suffix: jpg
+    - url:
+      - format_string:
+          string: https://collections.tepapa.govt.nz/object/{}
+          path: id

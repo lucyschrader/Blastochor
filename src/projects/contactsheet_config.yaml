@@ -1,10 +1,11 @@
 ---
-# Blastochor config for Google Arts & Culture dataset
+# Blastochor config for general information sheet with thumbnails
+# Output needs to be run through photodownloader script
 # Don't change these values - create a new project instead
 
 # Setup
-api_key_env: TPAK-GOOG
-mapping_file: googleartsandculture.yaml
+api_key_env: TE-PAPA-KEY
+mapping_file: contactsheet.yaml
 input_dir: input_files
 output_dir: output_files
 use_skiplist: False
@@ -13,20 +14,19 @@ min_image_size: 0
 max_list_size: 100
 clean_newlines: true
 coordinate_workaround: false
-use_quality_score: true
 
 # Group rows
-group_rows: true
-parent_label: sequence
+group_rows: false
+parent_label: null
 parent_fields:
-  include: false
-  fields: subitemid, orderid, rights, filespec
+  include: null
+  fields: null
 child_fields:
-  include: true
-  fields: itemid, subitemid, orderid, rights, filetype, filespec
+  include: null
+  fields: null
 ungrouped_fields:
-  include: false
-  fields: subitemid, orderid
+  include: null
+  fields: null
 
 # Sensitive data protection
 restrict_locality: true
@@ -39,21 +39,21 @@ mode: list
 quiet: true
 base_url: https://data.tepapa.govt.nz/collection
 endpoint: object
-timeout: 5
+timeout: 10
 attempts: 3
 
 # List mode settings
-list_source: googletestset.txt
+list_source: googletestset.csv
 
 # Search/scroll mode settings
-record_limit: 1000
+record_limit: null
 size: 1000
 
 query: "*"
 sort: -_meta.modified
 
 filter:
-  collection: Art
-  allows_download: true
+  collection: null
+  allows_download: null
   keyword_fields: null
   keyword_values: null

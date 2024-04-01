@@ -1,7 +1,4 @@
-import os
 import yaml
-import csv
-from datetime import datetime
 from src.setup.Settings import read_config, write_config
 from src.monitoring.Stats import stats
 
@@ -34,27 +31,6 @@ def gather_report_data():
 	               "export_filenames": stats.export_filenames,
 	               "update_counts": stats.modified_file_count}
 	return report_dict
-
-
-def clear_old_reports():
-	output_dir = read_config("output_dir")
-	export_report_dir = "{}/exports".format(output_dir)
-	if os.path.exists(export_report_dir):
-		export_reports = os.listdir(export_report_dir)
-		for report in export_reports:
-			file_path = "{d}/{f}".format(d=export_report_dir, f=report)
-			last_modified = os.path.getmtime(file_path)
-			last_modified_dt = datetime.fromtimestamp(last_modified)
-			if compare_timestamps(last_modified_dt):
-				os.remove(file_path)
-
-
-def compare_timestamps(last_modified):
-	now = datetime.now()
-	delta = now - last_modified
-	if delta.days > 7:
-		return True
-	return False
 
 
 def analyse_export():

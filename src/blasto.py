@@ -4,7 +4,7 @@ from src.setup.Settings import (read_config, write_config, setup_project, update
 from src.setup.InputList import read_input_list
 from src.monitoring.Stats import stats
 from src.util.ExportHandler import create_export_dir, delete_old_exports
-from src.monitoring.ExportReport import generate_export_report, clear_old_reports
+from src.monitoring.ExportReport import generate_export_report
 from src.setup.Mapper import Mapping
 from src.util.Harvester import Harvester
 
