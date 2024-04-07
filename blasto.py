@@ -67,7 +67,7 @@ def cli(project, query, listsource, limit, profiler, exportid):
     update_settings()
 
     if profiler:
-        from monitoring import Profiler
+        from src.monitoring import Profiler
         Profiler.profiler.enable()
         blasto()
         Profiler.profiler.disable()

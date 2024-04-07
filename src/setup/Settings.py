@@ -257,17 +257,35 @@ def set_filters():
 
     # Filter to a user-selected collection
     filter_config = read_config("filter")
-    user_collection = filter_config.get("collection")
+    user_collection = filter_config.get("collection").split("|")
     if user_collection:
-        if user_collection in collections:
-            filters.append({"field": "collection", "keyword": user_collection})
-            if user_collection in humanities:
-                filters.append({"field": "type", "keyword": "Object"})
-            elif user_collection in sciences:
-                filters.append({"field": "type", "keyword": "Specimen"})
-        else:
-            if not read_config("quiet"):
-                print("Invalid collection in filter config. Getting records for all collections")
+        colls = []
+        coll_types = []
+        for c in user_collection:
+            if c in collections:
+                colls.append(c)
+                if user_collection in humanities:
+                    coll_types.append("Object")
+                elif user_collection in sciences:
+                    coll_types.append("Specimen")
+
+        if len(colls) > 0:
+            if len(colls) == 1:
+                coll_filter_value = colls[0]
+            else:
+                coll_filter_value = colls
+            filters.append({"field": "collection", "keyword": coll_filter_value})
+
+        if len(coll_types) > 0:
+            coll_types = list(set(coll_types))
+            if len(coll_types) == 1:
+                coll_type_filter_value = coll_types[0]
+            else:
+                coll_type_filter_value = coll_types
+            filters.append({"field": "type", "keyword": coll_type_filter_value})
+    else:
+        if not read_config("quiet"):
+            print("No valid collection in filter config. Getting records for all collections")
 
     # Filter to records with downloadable images
     if filter_config.get("allows_download") is not None:

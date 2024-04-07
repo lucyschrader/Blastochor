@@ -40,11 +40,13 @@
       - literal:
           path: identification.i.qualifiedName
     - typeStatus:
-      - format_string:
-          string: "{} of {}"
-          path: identification.i.typeStatus, identification.i.toTaxon.scientificName
-          ordinal: 0
-          required: true
+      - collate_list:
+          path: identification.i
+      - for_each:
+        - format_string:
+            string: "{} of {}"
+            path: typeStatus, toTaxon.scientificName
+            required: true
     - identifiedByID:
       - literal:
           path: identification.i.identifiedBy.id
