@@ -1,6 +1,6 @@
 from math import floor
 import random
-import htmllaundry
+import nh3
 from askCO import Resource
 from src.setup.Settings import read_config
 from src.monitoring.Stats import stats
@@ -315,7 +315,9 @@ def step_to_field(data=None, path=None):
 
 def clean_html(data=None):
     if data:
-        value = htmllaundry.sanitize(data)
+        print(data)
+        value = nh3.clean(data)
+        print(value)
     else:
         value = None
 
