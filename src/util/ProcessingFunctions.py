@@ -315,9 +315,7 @@ def step_to_field(data=None, path=None):
 
 def clean_html(data=None):
     if data:
-        print(data)
         value = nh3.clean(data)
-        print(value)
     else:
         value = None
 

@@ -209,7 +209,7 @@ class MapValidator():
 
 
 def load_validation(validation_type):
-    validation_file = "resources/validation/{}-validation.yaml".format(validation_type)
+    validation_file = "src/resources/validation/{}-validation.yaml".format(validation_type)
     try:
         with open(validation_file, "r", encoding="utf-8") as f:
             validation = yaml.safe_load(f)

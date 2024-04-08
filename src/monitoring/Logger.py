@@ -4,7 +4,7 @@ import logging
 # https://realpython.com/python-logging/
 
 logging.basicConfig(level=logging.DEBUG,
-                    filename="logging/blastochor.log",
+                    filename="src/logging/blastochor.log",
                     filemode="w",
                     format="%(asctime)s - %(name)s - %(process)d - %(levelname)s - %(message)s")
 

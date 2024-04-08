@@ -36,19 +36,20 @@ def write_config(key, value):
 
 def setup_project(project):
     if project != "none":
-        config_file = "projects/{}_config.yaml".format(project)
+        config_file = "src/projects/{}_config.yaml".format(project)
 
     else:
         config_file = "config.yaml"
 
     if not os.path.exists(config_file):
-        config_file = "projects/default.yaml"
+        config_file = "src/projects/default.yaml"
 
     read_config_file(config_file, project)
 
 
 def read_config_file(config_file, project):
     global config
+    print(os.getcwd())
     try:
         with open(config_file, "r", encoding="utf-8") as f:
             print("Reading {}".format(config_file))
@@ -125,34 +126,28 @@ def set_mapfile():
         print("No mapfile provided. Setting to default map")
 
     # Point to map
-    map_path = "resources/mapfiles/{}".format(map_file)
+    map_path = "src/resources/mapfiles/{}".format(map_file)
     write_config("mapping_file", map_path)
 
 
 def set_input_dir():
     # Return error if no input directory
     input_dir = read_config("input_dir")
-    input_path = "../{}".format(input_dir)
     if not input_dir:
         break_on_settings_error("Input directory location needed")
     else:
-        if not os.path.exists(input_path):
-            os.mkdir(input_path)
-
-    write_config("input_dir", input_path)
+        if not os.path.exists(input_dir):
+            os.mkdir(input_dir)
 
 
 def set_output_dir():
     # Return error if no output directory
     output_dir = read_config("output_dir")
-    output_path = "../{}".format(output_dir)
     if not output_dir:
         break_on_settings_error("Output directory location needed to write files")
     else:
-        if not os.path.exists(output_path):
-            os.mkdir(output_path)
-
-    write_config("output_dir", output_path)
+        if not os.path.exists(output_dir):
+            os.mkdir(output_dir)
 
 
 def set_skiplist():
@@ -185,7 +180,7 @@ def set_endpoint():
 
 def load_country_codes():
     try:
-        with open("resources/countrycodes.json") as f:
+        with open("src/resources/countrycodes.json") as f:
             country_codes = json.load(f)
             write_config("country_codes", country_codes)
     except IOError:
@@ -242,7 +237,7 @@ def set_list_source():
     # Concatenate input directory and list source filename
     list_source = read_config("list_source")
     if list_source:
-        list_filepath = "./{d}/{f}".format(d=read_config("input_dir"), f=read_config("list_source"))
+        list_filepath = "{d}/{f}".format(d=read_config("input_dir"), f=read_config("list_source"))
         write_config("list_source", list_filepath)
 
 
