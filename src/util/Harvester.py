@@ -78,7 +78,7 @@ class Harvester():
 
         stats.initial_record_count = initial_search.record_count
         if not read_config("quiet"):
-            print("Search record count: {}".format(stats.search_result_count))
+            print("Search record count: {}".format(stats.initial_record_count))
 
         if read_config("record_limit"):
             record_limit = read_config("record_limit")
@@ -133,7 +133,7 @@ class Harvester():
 
         stats.initial_record_count = scroll.record_count
         if not read_config("quiet"):
-            print("Search record count: {}".format(stats.search_result_count))
+            print("Search record count: {}".format(stats.initial_record_count))
 
         stats.api_call_count += ceil(len(scroll.records) / size) + 1
 
