@@ -27,7 +27,8 @@ class ApplicationStats():
         self.initial_record_count = 0
         self.source_list_count = 0
         self.extension_records_count = 0
-        self.modified_file_count = None
+        self.new_record_count = None
+        self.modified_record_count = None
 
         self.file_write_counts = {}
         self.export_filenames = []
@@ -72,14 +73,18 @@ class ApplicationStats():
         delta = self.processing_end - self.processing_start
         self.processing_time = datetime_to_string(delta.total_seconds())
 
-    def count_recently_modified_records(self):
-        recently_modified_records = [memo[i] for i in list(memo.keys()) if memo[i]["modified_recently"]]
-        object_count = len([i for i in recently_modified_records if i["endpoint"] == "object"])
-        agent_count = len([i for i in recently_modified_records if i["endpoint"] == "agent"])
-        taxon_count = len([i for i in recently_modified_records if i["endpoint"] == "taxon"])
-        self.modified_file_count = {"object": object_count,
-                                    "agent": agent_count,
-                                    "taxon": taxon_count}
+    def count_new_and_modified(self):
+        self.new_record_count = self.count_modified_records("created")
+        self.modified_record_count = self.count_modified_records("modified")
+
+    def count_modified_records(self, modificationtype):
+        modified_records = [memo[i] for i in list(memo.keys()) if memo[i]["{}_recently".format(modificationtype)]]
+        object_count = len([i for i in modified_records if i["endpoint"] == "object"])
+        agent_count = len([i for i in modified_records if i["endpoint"] == "agent"])
+        taxon_count = len([i for i in modified_records if i["endpoint"] == "taxon"])
+        return {"object": object_count,
+                "agent": agent_count,
+                "taxon": taxon_count}
 
     def print_stats(self):
         print("Script ran in {}".format(self.run_time))
@@ -100,12 +105,16 @@ class ApplicationStats():
             print("Wrote {n} records to the {l} file".format(n=self.file_write_counts.get(label), l=label))
 
         print("Export analysis:")
-        for endpoint in list(self.modified_file_count.keys()):
-            count = self.modified_file_count[endpoint]
-            days = read_config("days_since_modified")
-            count_string = "{n} {e} records retrieved updated in the last {x} days".format(n=count,
-                                                                                           e=endpoint,
-                                                                                           x=days)
+        self.print_counts(self.new_record_count, "new")
+        self.print_counts(self.modified_record_count, "updated")
+
+    def print_counts(self, modified_counts, t):
+        days = read_config("days_since_modified")
+        for endpoint, count in modified_counts.items():
+            count_string = "{n} {e} records retrieved {t} in the last {x} days".format(n=count,
+                                                                                       e=endpoint,
+                                                                                       t=t,
+                                                                                       x=days)
             print("\t{}".format(count_string))
 
 

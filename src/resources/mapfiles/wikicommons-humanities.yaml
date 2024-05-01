@@ -100,7 +100,7 @@
     - institutionQID:
       - hardcoded:
           value: Q915603
-    - references:
+    - source:
       - format_string:
           string: https://collections.tepapa.govt.nz/object/{}
           path: id

@@ -21,6 +21,11 @@ class Harvester():
         self.attempts = read_config("attempts")
         self.label = read_config("corefile")
 
+        if not self.quiet:
+            print("Harvester details: API key = {ak}, timeout = {t}, attempts = {a}".format(ak=self.api_key,
+                                                                                            t=self.timeout,
+                                                                                            a=self.attempts))
+
     def complete_harvest(self, mode):
         # Gather search or scroll parameters and turn returned results into Record objects
         endpoint = read_config("endpoint")

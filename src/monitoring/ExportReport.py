@@ -5,7 +5,7 @@ from src.monitoring.Stats import stats
 
 def generate_export_report():
 	stats.process_runtimes()
-	stats.count_recently_modified_records()
+	stats.count_new_and_modified()
 	output_dir = read_config("output_dir")
 	export_filename = read_config("export_filename")
 	export_report_filename = "{}.yaml".format(export_filename)
@@ -29,7 +29,9 @@ def gather_report_data():
 	               "extension_records": stats.extension_records_count,
 	               "processing_time": stats.processing_time,
 	               "export_filenames": stats.export_filenames,
-	               "update_counts": stats.modified_file_count}
+	               "records_written": stats.file_write_counts,
+	               "new_record_counts": stats.new_record_count,
+	               "update_counts": stats.modified_record_count}
 	return report_dict
 
 

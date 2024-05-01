@@ -35,6 +35,7 @@ def add_to_memo(status=None, irn=None, endpoint=None, label=None, extension=None
             "is_extension": extension,
             "media_irns": [],
             "checked_if_modified": False,
+            "created_recently": False,
             "modified_recently": False
         }
 

@@ -18,7 +18,7 @@ class Record():
         if read_config("compare_quality_score"):
             self.check_quality_score()
 
-        self.check_modified_since()
+        self.check_new_or_modified()
 
         if not read_config("quiet"):
             print("Record created: {e}, {i}".format(e=self.endpoint, i=self.irn))
@@ -59,14 +59,19 @@ class Record():
                     if quality_score > stats.quality_score_upper:
                         stats.quality_score_upper = quality_score
 
-    def check_modified_since(self):
+    def check_new_or_modified(self):
         if not retrieve_from_memo(self.pid)["checked_if_modified"]:
-            date_modified = self.data["_meta"]["modified"]
-            date_modified_datestamp = datetime.fromisoformat(date_modified.replace("Z", ""))
-            if date_modified_datestamp >= read_config("check_modified_since"):
-                modified_recently = True
-            else:
-                modified_recently = False
+            modified_recently = self.compare_dates("modified")
+            created_recently = self.compare_dates("created")
 
-            update_memo(self.pid, "check_if_modified", True)
+            update_memo(self.pid, "checked_if_modified", True)
             update_memo(self.pid, "modified_recently", modified_recently)
+            update_memo(self.pid, "created_recently", created_recently)
+
+    def compare_dates(self, datetype):
+        record_date = self.data["_meta"][datetype]
+        rd_datestamp = datetime.fromisoformat(record_date.replace("Z", ""))
+        if rd_datestamp >= read_config("check_modified_since"):
+            return True
+        else:
+            return False

@@ -24,6 +24,15 @@
     - wikitext:
       - hardcoded:
           value: null
+    - description:
+      - hardcoded:
+          value: null
+    - date:
+      - hardcoded:
+          value: null
+    - author:
+      - hardcoded:
+          value: Museum of New Zealand Te Papa Tongarewa
     - irn:
       - literal:
           path: id
@@ -154,7 +163,7 @@
     - institutionQID:
       - hardcoded:
           value: Q915603
-    - references:
+    - source:
       - format_string:
           string: https://collections.tepapa.govt.nz/object/{}
           path: id
