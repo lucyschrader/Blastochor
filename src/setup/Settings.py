@@ -214,7 +214,7 @@ def set_api_key():
     # Return error if no API key
     if read_config("api_key_env"):
         try:
-            write_config("api_key", os.environ.get(read_config("api_key_env")))
+            write_config("api_key", os.environ[read_config("api_key_env")])
             if not read_config("quiet"):
                 print("API key set to {}".format(read_config("api_key")))
         except ValueError:

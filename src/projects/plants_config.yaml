@@ -35,7 +35,7 @@ emufile: collectionevents.xml
 
 # Run
 mode: scroll
-quiet: false
+quiet: true
 base_url: https://data.tepapa.govt.nz/collection
 endpoint: object
 timeout: 10
