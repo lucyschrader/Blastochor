@@ -83,7 +83,7 @@ class Harvester():
         if read_config("record_limit"):
             record_limit = read_config("record_limit")
         else:
-            record_limit = stats.search_result_count
+            record_limit = stats.initial_result_count
 
         page_count = ceil(record_limit / size)
 

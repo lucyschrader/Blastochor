@@ -224,7 +224,7 @@ def print_report(report_type, report, fail, quiet, label=None):
         label = ""
     if fail:
         print("{} NOT VALID - REVIEW AND TRY AGAIN".format(report_type.upper()))
-        report_filename = "../" + report_type + label + "validationreport.txt"
+        report_filename = report_type + label + "validationreport.txt"
         with open(report_filename, "w+", encoding="utf-8") as f:
             f.write("\n".join(report))
 

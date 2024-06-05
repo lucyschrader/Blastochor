@@ -21,7 +21,7 @@ defaults = {"mapfile": "default.yaml",
             "query": "*",
             "timeout": 5,
             "attempts": 3,
-            "days_since_modified": 7}
+            "days_since_modified": 31}
 
 
 def read_config(key):
@@ -254,8 +254,9 @@ def set_filters():
 
     # Filter to a user-selected collection
     filter_config = read_config("filter")
-    user_collection = filter_config.get("collection").split("|")
+    user_collection = filter_config.get("collection")
     if user_collection:
+        user_collection = user_collection.split("|")
         colls = []
         coll_types = []
         for c in user_collection:
