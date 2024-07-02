@@ -10,13 +10,10 @@ This repo includes a basic mapping file that will be used if another is not prov
 
 ## Still to do
 - A complete default mapping that dumps out as much data as possible
-- Sample mode to pull down representative range of records for testing
-- Output as json
+- JSON export
 - Logging functionality
 - Command line options to run a search or single record, returning json or flattened default csv
-- Front end to create mapping file and run from browser
 - New kind of output that relates records together based on given criteria
-- Look into how easily this app could be forked for other museum APIs
 
 ## Installation
 Clone this repo using `git clone`. Install the following packages:
@@ -112,7 +109,6 @@ Filters:
 
 ## Mapping
 Mapping files are YAML (`.yaml`) files that name the CSVs that should be created, triggers for harvesting additional records, and lines of rules with the export-side fields in each file. Each rule then includes the API source field used and the transformation rules applied.
-
 
 `label` is what the app uses to generate output files' names and ensure it's applying the right rules to the right records.
 
