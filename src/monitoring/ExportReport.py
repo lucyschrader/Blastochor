@@ -1,4 +1,5 @@
 import yaml
+from datetime import date
 from src.setup.Settings import read_config, write_config
 from src.monitoring.Stats import stats
 
@@ -21,6 +22,7 @@ def generate_export_report():
 
 
 def gather_report_data():
+	export_date = date.today()
 	report_dict = {"export_id": read_config("export_id"),
 	               "runtime": stats.run_time,
 	               "api_calls": stats.api_call_count,
@@ -31,7 +33,10 @@ def gather_report_data():
 	               "export_filenames": stats.export_filenames,
 	               "records_written": stats.file_write_counts,
 	               "new_record_counts": stats.new_record_count,
-	               "update_counts": stats.modified_record_count}
+	               "update_counts": stats.modified_record_count,
+	               "year": export_date.year,
+	               "month": export_date.month,
+	               "day": export_date.day}
 	return report_dict
 
 

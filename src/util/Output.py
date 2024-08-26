@@ -61,18 +61,21 @@ class Output():
             print("Writing {} records to file".format(len(list(output_record_pids))))
 
         for record_pid in output_record_pids:
-            record = records.records[record_pid]
+            record = records.records.get(record_pid)
+            if record:
+                # Check if the record's rows need to point to another record
+                pointers = memo[record_pid]["structure"][self.label]["extends"]
+                if len(pointers) > 0:
+                    if not read_config("quiet"):
+                        print("{r} has pointers: {p}".format(r=record_pid, p=pointers))
 
-            # Check if the record's rows need to point to another record
-            pointers = memo[record_pid]["structure"][self.label]["extends"]
-            if len(pointers) > 0:
-                if not read_config("quiet"):
-                    print("{r} has pointers: {p}".format(r=record_pid, p=pointers))
-
-                for pointer in pointers:
-                    self.chop_up_record(record=record, pointer=pointer)
+                    for pointer in pointers:
+                        self.chop_up_record(record=record, pointer=pointer)
+                else:
+                    self.chop_up_record(record=record)
             else:
-                self.chop_up_record(record=record)
+                if not read_config("quiet"):
+                    print("No record with pid {} found in saved records".format(record_pid))
 
         print("Processing values")
 

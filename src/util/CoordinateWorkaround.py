@@ -8,7 +8,8 @@ from lxml import etree
 # and replaces the API values, avoiding the transformation applied in some cases by the ETL
 def apply_coordinate_workaround():
     print("Starting coordinate workaround")
-    emu_data_file = "src/resources/{}".format(read_config("emufile"))
+    emu_data_file = "{d}/resources/{f}".format(d=read_config("input_dir"),
+                                               f=read_config("emufile"))
 
     # Define the table name. Tuples are the start of a new record if their parent is this
     table_name = "ecollectionevents"

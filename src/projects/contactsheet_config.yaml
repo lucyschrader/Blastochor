@@ -43,7 +43,7 @@ timeout: 10
 attempts: 3
 
 # List mode settings
-list_source: googletestset.csv
+list_source: nancyadams-watercolours.txt
 
 # Search/scroll mode settings
 record_limit: null
