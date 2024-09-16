@@ -288,6 +288,13 @@ Use after another function that returns a value – this can be a single value o
     true: precise location information not given for threatened species
 ```
 
+`measure_geodistance`
+
+Use after another function that returns a `fieldcollection` record. Finds the distance between the coordinate centroid and the first of a pair of coordinates, giving the uncertainty radius.
+
+* parameters: `units` - optional, use "m" to return metres, otherwise will return kilometers
+
+
 `must_match`
 
 Use after another function that returns a value or list of values. Checks each term against an authority list and only keeps the ones you want. Not case-sensitive.

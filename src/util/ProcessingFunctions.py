@@ -2,6 +2,7 @@ from math import floor
 import random
 import nh3
 from askCO import Resource
+from geopy.distance import geodesic as GD
 from src.setup.Settings import read_config
 from src.monitoring.Stats import stats
 from src.datastore.RecordStore import records
@@ -238,6 +239,11 @@ class FunctionProcessor:
             case "map_value":
                 self.output_value = map_from_value(data=self.input_value,
                                                    mappings=self.params)
+
+            case "measure_geodistance":
+                units = self.params["units"]
+                self.output_value = measure_geodistance(data=self.input_value,
+                                                        units=units)
 
             case "must_match":
                 authorities = [str(term).lower() for term in self.params["terms"].split(", ")]
@@ -574,6 +580,32 @@ def map_from_value(data, mappings):
         mapped_value = mappings.get(data)
 
     return mapped_value
+
+
+def measure_geodistance(data, units):
+    centroid, radial = None, None
+    if literal(data, "atLocation"):
+        try:
+            centroid_vals = literal(data, ["atLocation", "mappingCentroid"])
+            if centroid_vals:
+                centroid = (centroid_vals["lat"], centroid_vals["lon"])
+        except KeyError:
+            pass
+
+        try:
+            point_vals = literal(data, ["atLocation", "mappingDetails"])
+            if point_vals:
+                if len(point_vals) == 2:
+                    radial = (point_vals[0]["decimalLatitude"], point_vals[0]["decimalLongitude"])
+        except (KeyError, IndexError):
+            pass
+
+    if centroid and radial:
+        radius_val = GD(centroid, radial).km
+        if units == "m":
+            radius_val = radius_val * 1000
+        radius_int = floor(radius_val)
+        return radius_int
 
 
 def must_match(data, authorities):

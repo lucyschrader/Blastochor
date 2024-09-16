@@ -143,6 +143,14 @@ map_value:
   display_name: lookup record
   description: Transform a given source value into something else.
   parameters: null
+measure_geodistance:
+  function_name: measure_geodistance
+  display_name: measure geodistance
+  description: On a record with multiple point values, measure the distance from the centroid to the radius.
+  parameters:
+    - parameter: units
+      required: false
+      multiple_allowed: false
 must_match:
   function_name: must_match
   display_name: must match
