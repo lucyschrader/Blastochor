@@ -583,6 +583,7 @@ def map_from_value(data, mappings):
 
 
 def measure_geodistance(data, units):
+    # If a collection event covers a coordinate line, compares the centroid and start to find a radial distance
     centroid, radial = None, None
     if literal(data, "atLocation"):
         try:

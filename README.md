@@ -30,20 +30,20 @@ The main functional setting in the config file is `mode`: `search`, `scroll` or 
 
 The default mapping file (`resources/mapfiles/defaultmap.yaml`) will provide some basic object information. You can create a new one for your project.
 
-When your config and mapping are ready, run the app with `python -m app`.
+When your config and mapping are ready, run the app with `python -m blasto`.
 
 When run, the application runs validation on your config and mapping files. If any errors are found the application will exit and you'll find a report textfile at root containing the validation log. If the config's `quiet` is set to `false`, it will also be printed to the CLI.
 
 ## Command line parameters
 Blastochor can be set up with projects using a pre-defined config and mapping file. Put the config file in `projects` with the name `[projectname]_config.yaml` and the mapfile (set the name in the config file) in `resources/mapfiles`.
 
-To run a project, enter `python -m app --project=[projectname]`.
+To run a project, enter `python -m blasto --project=[projectname]`.
 
-You can also set a limit on how many records to retrieve, outside what's in your config file - great for testing. Enter `python -m app --limit=[number]`. If search or scroll are set up to get more records (eg you ask for 100 but scroll is set up to get 1000 at a time), you'll get the larger number.
+You can also set a limit on how many records to retrieve, outside what's in your config file - great for testing. Enter `python -m blasto --limit=[number]`. If search or scroll are set up to get more records (eg you ask for 100 but scroll is set up to get 1000 at a time), you'll get the larger number.
 
-Run the application with a profiler using `python -m app --profiler=True`. A `.prof` file will be written to the `logging` directory.
+Run the application with a profiler using `python -m blasto --profiler=True`. A `.prof` file will be written to the `logging` directory.
 
-Use multiple parameters by stringing them together: `python -m app --project=plants --limit=10000`.
+Use multiple parameters by stringing them together: `python -m blasto --project=plants --limit=10000`.
 
 ## Config parameters
 
